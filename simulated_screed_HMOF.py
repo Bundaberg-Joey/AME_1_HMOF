@@ -9,7 +9,6 @@ import BOGP
 def data_loader(path_to_file):
     data_set = np.loadtxt(path_to_file)
     X, y = data_set[:, :-1], data_set[:, -1]
-    y = y.reshape(-1, 1)
     n, d = X.shape
     return X, y, n, d
 
@@ -18,18 +17,20 @@ def data_loader(path_to_file):
 
 
 def determine_material_value(material, true_results):
-    return true_results[material]
+    return true_results[material, 0]
 
 
 ########################################################################################################################
 
-X, y_true, n, d = data_loader(r'C:\Users\crh53\OneDrive\Desktop\PHD_Experiments\E2_AMI_James\Data\Scaled_HMOF_Data')
+X, y, n, d = data_loader(r'C:\Users\crh53\OneDrive\Desktop\PHD_Experiments\E2_AMI_James\Data\Scaled_HMOF_Data')
 num_initial_samples = 100
 max_iterations = 2000
 
-top = np.argsort(y_true)[-100:]  # true top 100 to compare sample with
+top = np.argsort(y)[-100:]  # true top 100 to compare sample with
 STATUS = np.zeros((n, 1))  # column vector denoting status of material (0=untested, 1=testing, 2=tested)
 y_experimental = np.full((n, 1), np.nan)  # column vector of determined material performances
+
+y_true = y.reshape(-1, 1)
 
 initial_samples = np.random.randint(0, n, num_initial_samples)  # choose n values where each value is a material index
 for sample in initial_samples:

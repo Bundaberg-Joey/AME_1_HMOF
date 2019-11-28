@@ -9,22 +9,10 @@ def return_y_value(i):
     return y_true_values[i]
 
 
-with open('HMOFDATA.pkl', 'rb') as f:
-    HMOFDATA = pickle.load(f)
-
-X_Physical = HMOFDATA['X_Physical']
-X_Chemical = HMOFDATA['X_Chemical']
-X_Topological = HMOFDATA['X_Topological']
-Y = HMOFDATA['YAPI_Fixed']
-
-n, m = Y.shape
-X = np.hstack((X_Physical, X_Chemical, X_Topological))  # set up feature matrix and test scores
-y = Y[:, 2]
-I = [i for i in range(n) if np.isnan(np.sum(X[i] + y[i])) == False and Y[i, 2] < 10]  # ignore any MOFs with nan values - or suspicious 2 with very high y
-y_true_values = y[I].reshape(-1, 1)
-X = X[I]
+data_set = np.loadtxt(r'C:\Users\crh53\OneDrive\Desktop\PHD_Experiments\E2_AMI_James\Data\Scaled_HMOF_Data')
+X, y = data_set[:, :-1], data_set[:, -1]
+y_true_values = y.reshape(-1, 1)
 n, d = X.shape
-
 
 STATUS = np.zeros((n, 1))  # status vector
 Y = np.zeros((n, 1)) * np.nan

@@ -38,13 +38,6 @@ n, d = X.shape
 """ true top 100 to compare sample with """
 top = np.argsort(y_true_valuesy)[-100:]
 
-""" normalize features """
-n, d = X.shape
-for j in range(d):
-    X[:, j] = X[:, j] - np.mean(X[:, j])
-    sig = np.mean(X[:, j] ** 2) ** 0.5
-    if sig > 1e-5:
-        X[:, j] = X[:, j] / sig
 
 """ sample  100 at random to start """
 p = np.random.permutation(n)

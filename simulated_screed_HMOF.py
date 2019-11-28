@@ -4,8 +4,8 @@ import numpy as np
 import BOGP
 
 
-def return_y_value(i):
-    return y_true[i]
+def perform_pseudo_experiment(material, true_results):
+    return true_results[material]
 
 
 data_set = np.loadtxt(r'C:\Users\crh53\OneDrive\Desktop\PHD_Experiments\E2_AMI_James\Data\Scaled_HMOF_Data')
@@ -25,7 +25,7 @@ nrand = 100
 ntested = nrand
 for i in range(nrand):
     STATUS[material_indices[i]] = 2
-    y_experimental[material_indices[i]] = return_y_value(material_indices[i])
+    y_experimental[material_indices[i]] = perform_pseudo_experiment(material_indices[i], y_true)
 
 P = BOGP.prospector(X)
 
@@ -33,7 +33,7 @@ while ntested < 2000:  # lets go!
     P.fit(y_experimental, STATUS)
     ipick, kpick = P.pick_next(STATUS)  # sample next point
     STATUS[ipick, kpick] = 1  # show that we are testing ipick
-    y_experimental[ipick, kpick] = return_y_value(ipick)  # now lets get the score and mark it as tested
+    y_experimental[ipick, kpick] = perform_pseudo_experiment(ipick, y_true)  # now lets get the score and update status
     STATUS[ipick, kpick] = 2
     ntested = ntested + 1  # count sample and print out current score
     print(ntested)

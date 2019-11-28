@@ -4,6 +4,11 @@ import numpy as np
 import pickle
 import BOGP
 
+
+def return_y_value(i):
+    return y_true_values[i]
+
+
 with open('HMOFDATA.pkl', 'rb') as f:
     HMOFDATA = pickle.load(f)
 
@@ -13,27 +18,16 @@ X_Topological = HMOFDATA['X_Topological']
 Y = HMOFDATA['YAPI_Fixed']
 
 n, m = Y.shape
-
-
 X = np.hstack((X_Physical, X_Chemical, X_Topological))  # set up feature matrix and test scores
 y = Y[:, 2]
-
-
 I = [i for i in range(n) if np.isnan(np.sum(X[i] + y[i])) == False and Y[i, 2] < 10]  # ignore any MOFs with nan values - or suspicious 2 with very high y
 y_true_values = y[I].reshape(-1, 1)
+X = X[I]
+n, d = X.shape
 
 
 STATUS = np.zeros((n, 1))  # status vector
-
-
-def return_y_value(i):
-    return y_true_values[i]
-
-
 Y = np.zeros((n, 1)) * np.nan
-X = X[I]
-
-n, d = X.shape
 
 
 top = np.argsort(y_true_values)[-100:]  # true top 100 to compare sample with
@@ -41,14 +35,12 @@ top = np.argsort(y_true_values)[-100:]  # true top 100 to compare sample with
 
 p = np.random.permutation(n)  # sample  100 at random to start
 nrand = 100
+ntested = nrand
 for i in range(nrand):
     STATUS[p[i]] = 2
     Y[p[i]] = return_y_value(p[i])
 
 P = BOGP.prospector(X)
-
-ntested = nrand
-
 
 while ntested < 2000:  # lets go!
     P.fit(Y, STATUS)

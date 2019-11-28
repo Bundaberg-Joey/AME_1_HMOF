@@ -128,4 +128,4 @@ class prospector(object):
         else:
             alpha=np.random.rand(self.n)
         ipick=untested[np.argmax(alpha[untested])]
-        return ipick,0
+        return ipick

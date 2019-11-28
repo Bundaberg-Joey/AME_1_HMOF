@@ -42,10 +42,10 @@ P = BOGP.prospector(X)
 
 while ntested < max_iterations:  # lets go!
     P.fit(y_experimental, STATUS)
-    ipick, kpick = P.pick_next(STATUS)  # sample next point
-    STATUS[ipick, kpick] = 1  # show that we are testing ipick
-    y_experimental[ipick, kpick] = determine_material_value(ipick, y_true)  # now lets get the score and update status
-    STATUS[ipick, kpick] = 2
+    ipick = P.pick_next(STATUS)  # sample next point
+    STATUS[ipick, 0] = 1  # show that we are testing ipick
+    y_experimental[ipick, 0] = determine_material_value(ipick, y_true)  # now lets get the score and update status
+    STATUS[ipick, 0] = 2
     ntested = ntested + 1  # count sample and print out current score
     print(ntested)
     print(sum(1 for i in range(n) if i in top and STATUS[i, 0] == 2))

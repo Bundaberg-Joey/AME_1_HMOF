@@ -14,16 +14,16 @@ Y = HMOFDATA['YAPI_Fixed']
 
 n, m = Y.shape
 
-""" set up feature matrix and test scores """
-X = np.hstack((X_Physical, X_Chemical, X_Topological))
+
+X = np.hstack((X_Physical, X_Chemical, X_Topological))  # set up feature matrix and test scores
 y = Y[:, 2]
 
-""" ignore any MOFs with nan values - or suspicious 2 with very high y """
-I = [i for i in range(n) if np.isnan(np.sum(X[i] + y[i])) == False and Y[i, 2] < 10]
+
+I = [i for i in range(n) if np.isnan(np.sum(X[i] + y[i])) == False and Y[i, 2] < 10]  # ignore any MOFs with nan values - or suspicious 2 with very high y
 y_true_values = y[I].reshape(-1, 1)
 
-""" status vector """
-STATUS = np.zeros((n, 1))
+
+STATUS = np.zeros((n, 1))  # status vector
 
 
 def return_y_value(i):
@@ -35,12 +35,11 @@ X = X[I]
 
 n, d = X.shape
 
-""" true top 100 to compare sample with """
-top = np.argsort(y_true_valuesy)[-100:]
+
+top = np.argsort(y_true_values)[-100:]  # true top 100 to compare sample with
 
 
-""" sample  100 at random to start """
-p = np.random.permutation(n)
+p = np.random.permutation(n)  # sample  100 at random to start
 nrand = 100
 for i in range(nrand):
     STATUS[p[i]] = 2
@@ -50,22 +49,13 @@ P = BOGP.prospector(X)
 
 ntested = nrand
 
-""" lets go! """
-while ntested < 2000:
+
+while ntested < 2000:  # lets go!
     P.fit(Y, STATUS)
-
-    """ sample next point """
-    ipick, kpick = P.pick_next(STATUS)
-
-    """ show that we are testing ipick """
-    STATUS[ipick, kpick] = 1
-
-    """ now lets get the score and mark it as tested """
-
-    Y[ipick, kpick] = return_y_value(ipick)
+    ipick, kpick = P.pick_next(STATUS)  # sample next point
+    STATUS[ipick, kpick] = 1  # show that we are testing ipick
+    Y[ipick, kpick] = return_y_value(ipick)  # now lets get the score and mark it as tested
     STATUS[ipick, kpick] = 2
-
-    """ count sample and print out current score """
-    ntested = ntested + 1
+    ntested = ntested + 1  # count sample and print out current score
     print(ntested)
     print(sum(1 for i in range(n) if i in top and STATUS[i, 0] == 2))

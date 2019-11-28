@@ -1,16 +1,6 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Oct 17 13:25:20 2019
-
-tests BOGP for Bayesian Optimization on HMOF database
-this is the non-belina version with nice plots etc... 
-
-@author: Hook
-"""
 
 import numpy as np
-import matplotlib.pyplot as plt
 import pickle
 import BOGP
 
@@ -57,8 +47,6 @@ for j in range(d):
 """ sample  100 at random to start """
 p=np.random.permutation(n)        
 nrand=100
-#tested=list(p[:nrand])
-#untested=list(p[nrand:])
 for i in range(nrand):
     STATUS[p[i]]=2
     Y[p[i]]=return_y_value(p[i])
@@ -68,38 +56,15 @@ for i in range(nrand):
 P=BOGP.prospector(X)
 
 ntested=nrand
+
 """ lets go! """
 while ntested<2000:
-
-    
     P.fit(Y,STATUS)
     
-#    
-#    """ update hyperparameters every 100 samples """
-#    if np.mod(ntested,its_per_up)==0:
-#        P.fit(X,untested,tested,y[tested])
-#        """ estiamates number of top 100 found so far """
-#        """ plots actual top 100 vs estimaed along with 90% range """
-#        ny=100
-#        YS=P.samples(nsamples=ny)
-#        R=np.zeros((ntested,ny))
-#        for j in range(ny):
-#            topsapmled=np.argpartition(YS[:,j],-100)[-100:]
-#            R[:,j]=np.cumsum([i in topsapmled for i in tested])
-#        """ nice plot to show progress and estimates score """
-#        plt.plot(np.cumsum([i in top for i in tested]),label='true top 100')
-#        plt.plot(np.mean(R,1),label='estimated top 100')
-#        plt.plot([ntested,ntested],[np.sort(R[-1])[4],np.sort(R[-1])[-5]])
-#        plt.legend()
-#        plt.xlabel('number of testes')
-#        plt.ylabel('number of top 100 found')
-#        plt.show()        
-  
+
     """ sample next point """
     ipick,kpick=P.pick_next(STATUS)
-#    tested.append(i)
-#    untested.remove(i)
-    
+
     """ show that we are testing ipick """
     STATUS[ipick,kpick]=1
     
@@ -113,49 +78,3 @@ while ntested<2000:
     ntested=ntested+1
     print(ntested)
     print(sum(1 for i in range(n) if i in top and STATUS[i,0]==2))
-
-#""" save list of tested MOFs """
-#np.save('tested_thompson',tested)
-#
-#""" some nice plots """
-#
-#""" estiamates number of top 100 found so far """
-#""" plots actual top 100 vs estimaed along with 90% range """
-#ny=100
-#YS=P.samples(nsamples=ny)
-#R=np.zeros((ntested,ny))
-#for j in range(ny):
-#    topsapmled=np.argpartition(YS[:,j],-100)[-100:]
-#    R[:,j]=np.cumsum([i in topsapmled for i in tested])
-#""" nice plot to show progress and estimates score """
-#plt.plot(np.cumsum([i in top for i in tested]),label='true top 100')
-#plt.plot(np.mean(R,1),label='estimated top 100')
-#plt.plot([ntested,ntested],[np.sort(R[-1])[4],np.sort(R[-1])[-5]])
-#plt.legend()
-#plt.xlabel('number of testes')
-#plt.ylabel('number of top 100 found')
-#plt.show()    
-#
-#""" breakdown into top 10, 25 etc... """
-#top1000=np.argsort(y)[-1000:]
-#N=[10,25,50,100,250,500]
-#for j in range(6):
-#    plt.plot(np.cumsum([i in top1000[-N[j]:] for i in tested])/N[j],label='top '+str(N[j]))
-#plt.legend()
-#plt.xlabel('number of testes')
-#plt.ylabel('proportion found')
-#plt.savefig('fig2.eps')
-#plt.show()
-#
-#""" histogram of top MOFs found vs top MOFs in full database """
-#y1000=y[top1000[0]]
-#y100=y[top1000[-100]]
-#H=np.histogram(y[y>y1000])
-#plt.hist(y,H[1],label='full database')
-#plt.hist(y[tested],H[1],label='AME sample')
-#plt.plot([y100,y100],[0,np.max(H[0])],'--',color='black',label='top 100')
-#plt.legend()
-#plt.xlabel('API')
-#plt.ylabel('frequency')
-#plt.savefig('fig3.eps')
-#plt.show()

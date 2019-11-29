@@ -7,17 +7,33 @@ import BOGP
 
 
 def data_loader(path_to_file):
+    """
+    Loads the features and target variables for the AME to assess. Currently set up as numpy array loading but can
+    easily retrofit depending on final decided file type
+
+    :param path_to_file: str, location of the Feature_target file
+    :return: features: np.array(), `m` by 'n' array which is the feature matrix of the data being modelled
+    :return: labels: np.array(), `m` sized array containing the target values for the passed features
+    """
     data_set = np.loadtxt(path_to_file)
-    X, y = data_set[:, :-1], data_set[:, -1]
-    n, d = X.shape
-    return X, y, n, d
+    features, labels = data_set[:, :-1], data_set[:, -1]
+    return features, labels
 
 
 ########################################################################################################################
 
 
 def determine_material_value(material, true_results):
-    return true_results[material, 0]
+    """
+    Performs pseudo experiment for the AMI where the performance value of the AMI selected material is looked up in the
+    loaded data array
+
+    :param material: int, index of the material chosen in the target values
+    :param true_results: np.array(), `m` sized array containing the target values for the passed features
+    :return: determined_value: float, the target value for the passed material index
+    """
+    determined_value = true_results[material, 0]
+    return determined_value
 
 
 ########################################################################################################################
@@ -25,15 +41,17 @@ def determine_material_value(material, true_results):
 data_path = r'C:\Users\crh53\OneDrive\Desktop\PHD_Experiments\E2_AMI_James\Data\Scaled_HMOF_Data'
 num_initial_samples = 100
 max_iterations = 2000
-n_tested = 0
 
-X, y, n, d = data_loader(data_path)
+X, y = data_loader(data_path)
+n, d = X.shape
+
 y_true = y.reshape(-1, 1)
 y_experimental = np.full((n, 1), np.nan)  # column vector of determined material performances
 
 top = np.argsort(y)[-100:]  # true top 100 to compare sample with
 status = np.zeros((n, 1))  # column vector denoting status of material (0=untested, 1=testing, 2=tested)
 
+n_tested = 0
 initial_samples = np.random.randint(0, n, num_initial_samples)  # choose n values where each value is a material index
 for sample in initial_samples:
     n_tested += 1

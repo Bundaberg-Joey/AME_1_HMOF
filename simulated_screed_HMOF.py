@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import numpy as np
 import BOGP
 
@@ -127,11 +128,16 @@ class SimulatedScreener(object):
 
 if __name__ == '__main__':
 
-    data_path = r'C:\Users\crh53\OneDrive\Desktop\PHD_Experiments\E2_AMI_James\Data\Scaled_HMOF_Data'
-    num_initial_samples = 100
-    max_iterations = 2000
+    test_path = r'C:\Users\crh53\OneDrive\Desktop\PHD_Experiments\E2_AMI_James\Data\Scaled_HMOF_Data'
+    # not moving file closer to preserve fidelity of the file generation
 
-    experiment = SimulatedScreener(data_path, num_initial_samples, max_iterations)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-d', '--data_file', action='store', default=test_path, help='path to data file for screening')
+    parser.add_argument('-i', '--initial_samples', action='store', default=100, help='# of random samples AMI takes')
+    parser.add_argument('-m', '--max_iterations', action='store', default=2000, help='# of materials AMI will sample')
+    args = parser.parse_args()
+
+    experiment = SimulatedScreener(args.data_file, args.initial_samples, args.max_iterations)
     experiment.simulation_initialisation()
     ami = BOGP.prospector(experiment.X)
     experiment.initial_random_samples()
@@ -139,5 +145,3 @@ if __name__ == '__main__':
 
 # TODO : Re-write simulation_initialisation into it's own object class (will aid different file types later)
 # TODO : Put simple tests in main to make sure data loaded ok (i.e. shape of X, y_true, status etc
-# TODO : Add command line argument functionality
-

@@ -69,7 +69,7 @@ class SimulatedScreener(object):
         :param true_results: np.array(), `m` sized array containing the target values for the passed features
         :return: determined_value: float, the target value for the passed material index
         """
-        determined_value = true_results[material, 0]
+        determined_value = true_results[material, 0]  # 0 because column vector
         return determined_value
 
 
@@ -113,3 +113,5 @@ if __name__ == '__main__':
 
 # TODO : Re-write simulation_initialisation into it's own object class (will aid different file types later)
 # TODO : Put simple tests in main to make sure data loaded ok (i.e. shape of X, y_true, status etc
+# TODO : Move AMI initialisation outside of the simulated screener and make it an argument to pass to SimulatedScreener
+# TODO : Add command line argument functionality

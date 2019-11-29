@@ -86,7 +86,18 @@ class SimulatedScreener(object):
             self.n_tested += 1
 
 
-    def perform_screening(self, autonomous_model):
+    def _user_updates(self):
+        """
+        Provides user updates on the status of the AMI screening. The current AMI iteration is provided along with the
+        number of top 100 performing materials (determined from loaded dataset) also.
+        """
+        checked_materials = np.where(self.status[:, 0] == 2)[0]
+        top_materials_found = sum(1 for i in range(self.n) if i in self.top_100 and i in checked_materials)
+        print(F'AMI Iteration {self.n_tested}')
+        print(F'{top_materials_found} out of 100 top materials found')
+
+
+    def perform_screening(self, autonomous_model, verbose=True):
         """
         Performs the simulated screening on the loaded dataset using the passed model. For each iteration of the model:
         1) The model fits itself to target values it has learned through running experiments of selected materials
@@ -94,24 +105,30 @@ class SimulatedScreener(object):
         3) The status of the material is then updated (0=not yet assessed, 1=being assessed, 2=has been assessed)
         4) The target value of the material is then determined (index look up of the originally loaded dataset)
 
+        Because the AMI requires a column vector be passed to it as `y_experimental` and `status` the [0] indexing
+        seen is to support that functionality while also updating parameters on this side
+
         :param autonomous_model: The AMI object performing the screening of the materials being investigated
+        :param verbose: Boolean, True sets the screener to provide user updates, False to silence them
         :return: N/A, updates internal parameters
         """
-        while self.n_tested < self.max_iterations:  # lets go!
+        while self.n_tested < self.max_iterations:
+
             autonomous_model.fit(self.y_experimental, self.status)
             ipick = autonomous_model.pick_next(self.status)  # sample next point
             self.status[ipick, 0] = 1  # show that we are testing ipick
             self.y_experimental[ipick, 0] = self._determine_material_value(ipick, self.y_true)
             self.status[ipick, 0] = 2
             self.n_tested += 1  # count sample and print out current score
-            print(self.n_tested)
-            print(sum(1 for i in range(self.n) if i in self.top_100 and self.status[i, 0] == 2))
+
+            if verbose:
+                self._user_updates()
 
 
 if __name__ == '__main__':
 
     data_path = r'C:\Users\crh53\OneDrive\Desktop\PHD_Experiments\E2_AMI_James\Data\Scaled_HMOF_Data'
-    num_initial_samples = 300
+    num_initial_samples = 100
     max_iterations = 2000
 
     experiment = SimulatedScreener(data_path, num_initial_samples, max_iterations)
@@ -123,4 +140,4 @@ if __name__ == '__main__':
 # TODO : Re-write simulation_initialisation into it's own object class (will aid different file types later)
 # TODO : Put simple tests in main to make sure data loaded ok (i.e. shape of X, y_true, status etc
 # TODO : Add command line argument functionality
-# TODO : abstract user output to method
+

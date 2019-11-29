@@ -3,69 +3,113 @@
 import numpy as np
 import BOGP
 
-########################################################################################################################
 
+class SimulatedScreener(object):
+    """Class which uses the AMI to perform simulated screening of materials from a dataset containing all features
+    and target values for the entries.
 
-def data_loader(path_to_file):
+    The SimulatedScreener must first be initialised by the user with the data location, the number of initial samples
+    for the AMI to take, and the maximum number of iterations the screening should be ran till
     """
-    Loads the features and target variables for the AME to assess. Currently set up as numpy array loading but can
-    easily retrofit depending on final decided file type
 
-    :param path_to_file: str, location of the Feature_target file
-    :return: features: np.array(), `m` by 'n' array which is the feature matrix of the data being modelled
-    :return: labels: np.array(), `m` sized array containing the target values for the passed features
-    """
-    data_set = np.loadtxt(path_to_file)
-    features, labels = data_set[:, :-1], data_set[:, -1]
-    return features, labels
-
-
-########################################################################################################################
-
-
-def determine_material_value(material, true_results):
-    """
-    Performs pseudo experiment for the AMI where the performance value of the AMI selected material is looked up in the
-    loaded data array
-
-    :param material: int, index of the material chosen in the target values
-    :param true_results: np.array(), `m` sized array containing the target values for the passed features
-    :return: determined_value: float, the target value for the passed material index
-    """
-    determined_value = true_results[material, 0]
-    return determined_value
+    def __init__(self, data_path, num_initial_samples, max_iterations):
+        self.data_path = data_path
+        self.num_initial_samples = num_initial_samples
+        self.max_iterations = max_iterations
+        self.n_tested = 0
+        self.X = None
+        self.n = None
+        self.y = None
+        self.y_true = None
+        self.y_experimental = None
+        self.status = None
+        self.top_100 = None
 
 
-########################################################################################################################
+    def simulation_initialisation(self):
+        """
+        Sets up all attributes required for running the AMI Simulated Screening
+        :return: N/A updates internal parameters
+        """
+        def load_simulation_data(data_path):
+            """
+            Loads the features and target variables for the AME to assess. Currently set up as numpy array loading but
+            can easily retrofit depending on final decided file type
+            :return: features: np.array(), `m` by 'n' array which is the feature matrix of the data being modelled
+            :return: labels: np.array(), `m` sized array containing the target values for the passed features
+            """
+            data_set = np.loadtxt(data_path)
+            features, labels = data_set[:, :-1], data_set[:, -1]
+            return features, labels
 
-data_path = r'C:\Users\crh53\OneDrive\Desktop\PHD_Experiments\E2_AMI_James\Data\Scaled_HMOF_Data'
-num_initial_samples = 100
-max_iterations = 2000
+        def format_target_values(y, n):
+            """
+            For simulated screenings, AMI requires an experimental column of results it has determined itself and the
+            "True" target values which it uses to evaluate chosen materials against. These must be in the correct
+            matrix / vector shape.
+            :return: (y_true, y_experimental), column vectors, [0] with all target values, [1] for determined values
+            """
+            y_true = y.reshape(-1, 1)  # column vector
+            y_experimental = np.full((n, 1), np.nan)  # nan as values not yet determined on initialisation
+            return y_true, y_experimental
 
-X, y = data_loader(data_path)
-n, d = X.shape
+        self.X, self.y = load_simulation_data(self.data_path)
+        self.n = self.X.shape[0]
+        self.y_true, self.y_experimental = format_target_values(self.y, self.n)
+        self.top_100 = np.argsort(self.y)[-100:]
+        self.status = np.zeros((self.n, 1))
 
-y_true = y.reshape(-1, 1)
-y_experimental = np.full((n, 1), np.nan)  # column vector of determined material performances
 
-top = np.argsort(y)[-100:]  # true top 100 to compare sample with
-status = np.zeros((n, 1))  # column vector denoting status of material (0=untested, 1=testing, 2=tested)
+    @staticmethod
+    def _determine_material_value(material, true_results):
+        """
+        Performs pseudo experiment for the AMI where the performance value of the AMI selected material is looked up in
+        the loaded data array
+        :param material: int, index of the material chosen in the target values
+        :param true_results: np.array(), `m` sized array containing the target values for the passed features
+        :return: determined_value: float, the target value for the passed material index
+        """
+        determined_value = true_results[material, 0]
+        return determined_value
 
-n_tested = 0
-initial_samples = np.random.randint(0, n, num_initial_samples)  # choose n values where each value is a material index
-for sample in initial_samples:
-    n_tested += 1
-    status[sample] = 2
-    y_experimental[sample] = determine_material_value(sample, y_true)  # determine material value and update
 
-P = BOGP.prospector(X)
+    def initial_random_samples(self):
+        """
+        Selects a number of random materials for the AMI to assess and performs pseudo experiments on all of them
+        in order for the model to have initial data to work with
+        :return: N/A updates internal parameters
+        """
+        initial_materials = np.random.randint(0, self.n, self.num_initial_samples)  # n random index values
+        for material_index in initial_materials:
+            self.status[material_index] = 2
+            self.y_experimental[material_index] = self._determine_material_value(material_index, self.y_true)
+            self.n_tested += 1
 
-while n_tested < max_iterations:  # lets go!
-    P.fit(y_experimental, status)
-    ipick = P.pick_next(status)  # sample next point
-    status[ipick, 0] = 1  # show that we are testing ipick
-    y_experimental[ipick, 0] = determine_material_value(ipick, y_true)  # now lets get the score and update status
-    status[ipick, 0] = 2
-    n_tested = n_tested + 1  # count sample and print out current score
-    print(n_tested)
-    print(sum(1 for i in range(n) if i in top and status[i, 0] == 2))
+
+    def perform_screening(self):
+
+        ami = BOGP.prospector(self.X)
+
+        while self.n_tested < self.max_iterations:  # lets go!
+            ami.fit(self.y_experimental, self.status)
+            ipick = ami.pick_next(self.status)  # sample next point
+            self.status[ipick, 0] = 1  # show that we are testing ipick
+            self.y_experimental[ipick, 0] = self._determine_material_value(ipick, self.y_true)
+            self.status[ipick, 0] = 2
+            self.n_tested += 1  # count sample and print out current score
+            print(self.n_tested)
+            print(sum(1 for i in range(self.n) if i in self.top_100 and self.status[i, 0] == 2))
+
+
+if __name__ == '__main__':
+    data_path = r'C:\Users\crh53\OneDrive\Desktop\PHD_Experiments\E2_AMI_James\Data\Scaled_HMOF_Data'
+    num_initial_samples = 300
+    max_iterations = 2000
+
+    experiment = SimulatedScreener(data_path, num_initial_samples, max_iterations)
+    experiment.simulation_initialisation()
+    experiment.initial_random_samples()
+    experiment.perform_screening()
+
+# TODO : Re-write simulation_initialisation into it's own object class (will aid different file types later)
+# TODO : Put simple tests in main to make sure data loaded ok (i.e. shape of X, y_true, status etc

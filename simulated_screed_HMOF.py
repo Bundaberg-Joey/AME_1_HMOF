@@ -86,13 +86,20 @@ class SimulatedScreener(object):
             self.n_tested += 1
 
 
-    def perform_screening(self):
+    def perform_screening(self, autonomous_model):
+        """
+        Performs the simulated screening on the loaded dataset using the passed model. For each iteration of the model:
+        1) The model fits itself to target values it has learned through running experiments of selected materials
+        2) Picks a new material to assess based on its features
+        3) The status of the material is then updated (0=not yet assessed, 1=being assessed, 2=has been assessed)
+        4) The target value of the material is then determined (index look up of the originally loaded dataset)
 
-        ami = BOGP.prospector(self.X)
-
+        :param autonomous_model: The AMI object performing the screening of the materials being investigated
+        :return: N/A, updates internal parameters
+        """
         while self.n_tested < self.max_iterations:  # lets go!
-            ami.fit(self.y_experimental, self.status)
-            ipick = ami.pick_next(self.status)  # sample next point
+            autonomous_model.fit(self.y_experimental, self.status)
+            ipick = autonomous_model.pick_next(self.status)  # sample next point
             self.status[ipick, 0] = 1  # show that we are testing ipick
             self.y_experimental[ipick, 0] = self._determine_material_value(ipick, self.y_true)
             self.status[ipick, 0] = 2
@@ -102,16 +109,18 @@ class SimulatedScreener(object):
 
 
 if __name__ == '__main__':
+
     data_path = r'C:\Users\crh53\OneDrive\Desktop\PHD_Experiments\E2_AMI_James\Data\Scaled_HMOF_Data'
     num_initial_samples = 300
     max_iterations = 2000
 
     experiment = SimulatedScreener(data_path, num_initial_samples, max_iterations)
     experiment.simulation_initialisation()
+    ami = BOGP.prospector(experiment.X)
     experiment.initial_random_samples()
-    experiment.perform_screening()
+    experiment.perform_screening(ami)
 
 # TODO : Re-write simulation_initialisation into it's own object class (will aid different file types later)
 # TODO : Put simple tests in main to make sure data loaded ok (i.e. shape of X, y_true, status etc
-# TODO : Move AMI initialisation outside of the simulated screener and make it an argument to pass to SimulatedScreener
 # TODO : Add command line argument functionality
+# TODO : abstract user output to method

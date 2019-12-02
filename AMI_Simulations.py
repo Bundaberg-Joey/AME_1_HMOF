@@ -3,9 +3,9 @@
 import numpy as np
 
 
-class Technician(object):
+class DataTriage(object):
     """
-    The Technician takes a dataset which is to be assessed by the AMI and then performs the necessary pre-processing
+    The Triage takes a dataset which is to be assessed by the AMI and then performs the necessary pre-processing
     steps on the data set including: loading the data into numpy arrays, formatting the target values into the correct
     representation and other values.
 
@@ -25,7 +25,7 @@ class Technician(object):
 
 
     @staticmethod
-    def _load_simulation_data(data_path):
+    def load_simulation_data(data_path):
         """
         Loads the features and target variables for the AME to assess. Currently set up as numpy array loading but
         can easily retrofit depending on final decided file type
@@ -54,19 +54,20 @@ class Technician(object):
         returned as a dictionary so that they can be further utilised as the basis for screening experiments on this
         loaded dataset
         :param top_n: int, the number of top samples to consider in the target values for scoring the AMI performance
-        :return: dataset_parameters: dict, export the technicians attributes to be used later by AMI
+        :return: triaged_parameters: dict, export the technicians attributes to be used later by AMI
         """
-        self.X, self.y = self._load_simulation_data(self.data_path)
+        self.X, self.y = self.load_simulation_data(self.data_path)
         self.n = self.X.shape[0]
         self.y_true, self.y_experimental = self._format_target_values(self.y, self.n)
         self.top_n = np.argsort(self.y)[-top_n:]
         self.status = np.zeros((self.n, 1))
-        dataset_parameters = vars(self)
-        return dataset_parameters
+        triaged_parameters = vars(self)
+        return triaged_parameters
+
 
 #test_path = r'C:\Users\crh53\OneDrive\Desktop\PHD_Experiments\E2_AMI_James\Data\Scaled_HMOF_Data'
-#abe = Technician(test_path)
+#abe = DataTriage(test_path)
 #parameters = abe.prepare_technical_data()
-#print(parameters)
+#print(parameters.keys())
 
 

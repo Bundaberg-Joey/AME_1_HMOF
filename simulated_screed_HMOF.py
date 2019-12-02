@@ -8,7 +8,7 @@ from AMI_Simulations import DataTriage, SimulatedScreener
 
 if __name__ == '__main__':
 
-    data_location = r'C:\Users\crh53\OneDrive\Desktop\PHD_Experiments\E2_AMI_James\Data\Scaled_HMOF_Data'
+    data_location = r'C:\Users\crh53\OneDrive\Desktop\PHD_Experiments\E2_AMI_James\Data\Scaled_HMOF_Data.csv'
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--data_file', action='store', default=data_location, help='path to data file')
@@ -17,7 +17,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     dt = DataTriage()
-    sim_params = dt.prepare_simulation_data(data_path=args.data_file)
+    dt.load_simulation_data(data_path=args.data_file, data_delimiter=',', headers_present=1, output=False)
+    sim_params = dt.prepare_simulation_data()
 
     sim_screen = SimulatedScreener(simulation_params=sim_params, max_iterations=args.max_iterations)
     sim_screen.initial_random_samples(num_initial_samples=args.initial_samples)
@@ -25,5 +26,4 @@ if __name__ == '__main__':
     ami = BOGP.prospector(X=sim_screen.X)
     sim_screen.perform_screening(model=ami, verbose=True)
 
-# TODO : Re-write simulation_initialisation into it's own object class (will aid different file types later)
 # TODO : Put simple tests in main to make sure data loaded ok (i.e. shape of X, y_true, status etc

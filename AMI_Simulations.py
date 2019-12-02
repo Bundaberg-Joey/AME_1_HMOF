@@ -21,16 +21,21 @@ class DataTriage(object):
         self.y_experimental = None
         self.status = None
 
-
     @staticmethod
-    def load_simulation_data(data_path):
+    def load_simulation_data(data_path, data_delimiter=',', headers_present=1):
         """
-        Loads the features and target variables for the AME to assess. Currently set up as numpy array loading but
-        can easily retrofit depending on final decided file type
+        Loads the features and target variables for the AME to assess from a delimited file, assumed csv.
+        The default loading removes the first row to allow headed files to be read and so should be specified if not.
+        The delimited file is assumed to be structured with target values as the final right hand column.
+
+        :param data_path: str, location of the the data file to be read
+        :param data_delimiter: str, delimiter used in the file
+        :param headers_present: int, Number of lines in data file head containing non numeric data, needs to be removed
         :return: features: np.array(), `m` by 'n' array which is the feature matrix of the data being modelled
         :return: labels: np.array(), `m` sized array containing the target values for the passed features
         """
-        data_set = np.loadtxt(data_path)
+        data_set = np.loadtxt(data_path, delimiter=data_delimiter, skiprows=headers_present)
+        assert data_set.dtype == 'float', 'csv file must only contain numerical data'
         features, labels = data_set[:, :-1], data_set[:, -1]
         return features, labels
 
@@ -40,18 +45,21 @@ class DataTriage(object):
         For simulated screenings, AMI requires an experimental column of results it has determined itself and the
         "True" target values which it uses to evaluate chosen materials against. These must be in the correct
         matrix / vector shape.
+
+        :param y: np.array(), size `n` array containing the loaded target values
+        :param n: int, the number of entries in the passed array `y`
         :return: (y_true, y_experimental), column vectors, [0] with all target values, [1] for determined values
         """
         y_true = y.reshape(-1, 1)  # column vector
         y_experimental = np.full((n, 1), np.nan)  # nan as values not yet determined on initialisation
         return y_true, y_experimental
 
-    def prepare_simulation_data(self, data_path, top_n=100):
+    def prepare_simulation_data(self, data_path):
         """
         Updates all relevant object attributes with those determined from the loaded dataset. These attributes are then
         returned as a dictionary so that they can be further utilised as the basis for screening experiments on this
-        loaded dataset
-        :param top_n: int, the number of top samples to consider in the target values for scoring the AMI performance
+        loaded dataset.
+
         :param data_path: str, path to txt file containing the c
         :return: triaged_parameters: dict, export the technicians attributes to be used later by AMI
         """
@@ -86,12 +94,12 @@ class SimulatedScreener(object):
 
         self.top_100 = np.argsort(self.y_true.ravel())[-100:]
 
-
     @staticmethod
     def determine_material_value(material, true_results):
         """
         Performs pseudo experiment for the AMI where the performance value of the AMI selected material is looked up in
         the loaded data array
+
         :param material: int, index of the material chosen in the target values
         :param true_results: np.array(), `m` sized array containing the target values for the passed features
         :return: determined_value: float, the target value for the passed material index
@@ -99,11 +107,12 @@ class SimulatedScreener(object):
         determined_value = true_results[material, 0]  # 0 because column vector indexing
         return determined_value
 
-
     def initial_random_samples(self, num_initial_samples):
         """
         Selects a number of random materials for the AMI to assess and performs pseudo experiments on all of them
         in order for the model to have initial data to work with
+
+        :param num_initial_samples: int, number of data points to be sampled randomly from initial data
         :return: N/A updates internal parameters
         """
         initial_materials = np.random.randint(0, self.n, num_initial_samples)  # n random index values
@@ -111,7 +120,6 @@ class SimulatedScreener(object):
             self.status[material_index] = 2
             self.y_experimental[material_index] = self.determine_material_value(material_index, self.y_true)
             self.n_tested += 1
-
 
     def user_updates(self):
         """
@@ -122,7 +130,6 @@ class SimulatedScreener(object):
         top_materials_found = sum(1 for i in range(self.n) if i in self.top_100 and i in checked_materials)
         print(F'AMI Iteration {self.n_tested}')
         print(F'{top_materials_found} out of 100 top materials found')
-
 
     def perform_screening(self, model, verbose=True):
         """
@@ -153,6 +160,3 @@ class SimulatedScreener(object):
 
 
 ########################################################################################################################
-
-
-

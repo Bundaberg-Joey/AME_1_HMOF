@@ -20,9 +20,9 @@ class DataTriage(object):
         self.y_true = None
         self.y_experimental = None
         self.status = None
+        self.data_loaded = False
 
-    @staticmethod
-    def load_simulation_data(data_path, data_delimiter=',', headers_present=1):
+    def load_simulation_data(self, data_path, data_delimiter=',', headers_present=1, output=False):
         """
         Loads the features and target variables for the AME to assess from a delimited file, assumed csv.
         The default loading removes the first row to allow headed files to be read and so should be specified if not.
@@ -31,13 +31,18 @@ class DataTriage(object):
         :param data_path: str, location of the the data file to be read
         :param data_delimiter: str, delimiter used in the file
         :param headers_present: int, Number of lines in data file head containing non numeric data, needs to be removed
+        :param output: boolean, method will update the object attributes but if required by user can set to True
         :return: features: np.array(), `m` by 'n' array which is the feature matrix of the data being modelled
         :return: labels: np.array(), `m` sized array containing the target values for the passed features
         """
         data_set = np.loadtxt(data_path, delimiter=data_delimiter, skiprows=headers_present)
         assert data_set.dtype == 'float', 'csv file must only contain numerical data'
         features, labels = data_set[:, :-1], data_set[:, -1]
-        return features, labels
+        self.X, self.y = features, labels
+        self.data_loaded = True
+
+        if output:
+            return features, labels
 
     @staticmethod
     def format_target_values(y, n):
@@ -54,21 +59,22 @@ class DataTriage(object):
         y_experimental = np.full((n, 1), np.nan)  # nan as values not yet determined on initialisation
         return y_true, y_experimental
 
-    def prepare_simulation_data(self, data_path):
+    def prepare_simulation_data(self):
         """
         Updates all relevant object attributes with those determined from the loaded dataset. These attributes are then
         returned as a dictionary so that they can be further utilised as the basis for screening experiments on this
         loaded dataset.
 
-        :param data_path: str, path to txt file containing the c
         :return: triaged_parameters: dict, export the technicians attributes to be used later by AMI
         """
-        self.X, self.y = self.load_simulation_data(data_path)
-        self.n = self.X.shape[0]
-        self.y_true, self.y_experimental = self.format_target_values(self.y, self.n)
-        self.status = np.zeros((self.n, 1))
-        triaged_parameters = vars(self)
-        return triaged_parameters
+        if self.data_loaded:
+            self.n = self.X.shape[0]
+            self.y_true, self.y_experimental = self.format_target_values(self.y, self.n)
+            self.status = np.zeros((self.n, 1))
+            triaged_parameters = vars(self)
+            return triaged_parameters
+        else:
+            print('You need to first load data using the `load_simulation_data()` method')
 
 
 ########################################################################################################################

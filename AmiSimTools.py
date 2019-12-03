@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+"""
+This module contains classes used to run simulated screenings with the AMI on already determined data sets.
+"""
+
+__author__ = 'Calum Hand'
+__version__ = '1.0.0'
+
 import numpy as np
 
 

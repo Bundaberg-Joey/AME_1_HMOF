@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
-import numpy as np
 import multiprocessing
 from functools import partial
 from concurrent.futures import ProcessPoolExecutor
+
+import numpy as np
 
 import BOGP
 from AMI_Simulations import DataTriage, SimulatedScreener

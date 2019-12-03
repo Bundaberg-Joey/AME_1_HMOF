@@ -8,7 +8,7 @@ from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 
 import BOGP
-from AMI_Simulations import DataTriage, SimulatedScreener
+from AmiSimTools import DataTriage, SimulatedScreener
 
 
 def main(seed, simulator, model, num_initial_samples, verbose):

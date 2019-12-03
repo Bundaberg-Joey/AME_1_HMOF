@@ -17,13 +17,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     dt = DataTriage()
-    dt.load_simulation_data(data_path=args.data_file, data_delimiter=',', headers_present=1, output=False)
-    sim_params = dt.prepare_simulation_data()
+    X, y = dt.load_simulation_data(data_path=args.data_file, data_delimiter=',', headers_present=1)
+    sim_params = dt.prepare_simulation_data(y=y)
 
     sim_screen = SimulatedScreener(simulation_params=sim_params, max_iterations=args.max_iterations)
     sim_screen.initial_random_samples(num_initial_samples=args.initial_samples)
 
-    ami = BOGP.prospector(X=sim_screen.X)
+    ami = BOGP.prospector(X=X)
     sim_screen.perform_screening(model=ami, verbose=True)
 
 # TODO : Put simple tests in main to make sure data loaded ok (i.e. shape of X, y_true, status etc

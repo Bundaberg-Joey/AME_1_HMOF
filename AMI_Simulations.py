@@ -14,15 +14,13 @@ class DataTriage(object):
     """
 
     def __init__(self):
-        self.X = None
         self.n = None
-        self.y = None
         self.y_true = None
         self.y_experimental = None
         self.status = None
-        self.data_loaded = False
 
-    def load_simulation_data(self, data_path, data_delimiter=',', headers_present=1, output=False):
+    @staticmethod
+    def load_simulation_data(data_path, data_delimiter=',', headers_present=1):
         """
         Loads the features and target variables for the AME to assess from a delimited file, assumed csv.
         The default loading removes the first row to allow headed files to be read and so should be specified if not.
@@ -31,18 +29,13 @@ class DataTriage(object):
         :param data_path: str, location of the the data file to be read
         :param data_delimiter: str, delimiter used in the file
         :param headers_present: int, Number of lines in data file head containing non numeric data, needs to be removed
-        :param output: boolean, method will update the object attributes but if required by user can set to True
         :return: features: np.array(), `m` by 'n' array which is the feature matrix of the data being modelled
         :return: labels: np.array(), `m` sized array containing the target values for the passed features
         """
         data_set = np.loadtxt(data_path, delimiter=data_delimiter, skiprows=headers_present)
-        assert data_set.dtype == 'float', 'csv file must only contain numerical data'
+        assert data_set.size > 0, 'Loaded data set was empty'
         features, labels = data_set[:, :-1], data_set[:, -1]
-        self.X, self.y = features, labels
-        self.data_loaded = True
-
-        if output:
-            return features, labels
+        return features, labels
 
     @staticmethod
     def format_target_values(y, n):
@@ -59,22 +52,20 @@ class DataTriage(object):
         y_experimental = np.full((n, 1), np.nan)  # nan as values not yet determined on initialisation
         return y_true, y_experimental
 
-    def prepare_simulation_data(self):
+    def prepare_simulation_data(self, y):
         """
         Updates all relevant object attributes with those determined from the loaded dataset. These attributes are then
         returned as a dictionary so that they can be further utilised as the basis for screening experiments on this
         loaded dataset.
 
+        :param y: np.array(), `m` sized array containing the target values for the passed features
         :return: triaged_parameters: dict, export the technicians attributes to be used later by AMI
         """
-        if self.data_loaded:
-            self.n = self.X.shape[0]
-            self.y_true, self.y_experimental = self.format_target_values(self.y, self.n)
-            self.status = np.zeros((self.n, 1))
-            triaged_parameters = vars(self)
-            return triaged_parameters
-        else:
-            print('You need to first load data using the `load_simulation_data()` method')
+        self.n = y.shape[0]
+        self.y_true, self.y_experimental = self.format_target_values(y, self.n)
+        self.status = np.zeros((self.n, 1))
+        triaged_parameters = vars(self)
+        return triaged_parameters
 
 
 ########################################################################################################################
@@ -85,14 +76,12 @@ class SimulatedScreener(object):
     and target values for the entries.
 
     The simulated screener takes parameters about the data as input along with the maximum number of iterations
-    that the model will run for. Currently split from the DataTriage as allows for more flexibility but the dictionary
-    method of passing around attributes between objects doesn't seem that robust so will check with Gael...
+    that the model will run for.
     """
     def __init__(self, simulation_params, max_iterations):
         self.max_iterations = max_iterations
         self.n_tested = 0
 
-        self.X = simulation_params['X']
         self.n = simulation_params['n']
         self.y_true = simulation_params['y_true']
         self.y_experimental = simulation_params['y_experimental']

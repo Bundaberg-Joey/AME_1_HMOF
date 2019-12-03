@@ -110,7 +110,7 @@ class SimulatedScreener(object):
         :param num_initial_samples: int, number of data points to be sampled randomly from initial data
         :return: N/A updates internal parameters
         """
-        initial_materials = np.random.randint(0, self.n, num_initial_samples)  # n random index values
+        initial_materials = np.random.choice(self.n, num_initial_samples, replace=False)  # n random index values
         for material_index in initial_materials:
             self.status[material_index] = 2
             self.y_experimental[material_index] = self.determine_material_value(material_index, self.y_true)

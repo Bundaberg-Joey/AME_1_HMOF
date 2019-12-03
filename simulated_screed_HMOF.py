@@ -17,17 +17,17 @@ if __name__ == '__main__':
     parser.add_argument('-m', '--max_iterations', action='store', default=2000, help='# of materials AMI will sample')
     args = parser.parse_args()
 
-    random_seed = np.random.randint(0, 2**32-1, 1)  # range of permissible values for Randomstate
-    np.random.RandomState(seed=random_seed)
-
     dt = DataTriage()
     X, y = dt.load_simulation_data(data_path=args.data_file, data_delimiter=',', headers_present=1)
     sim_params = dt.prepare_simulation_data(y=y)
 
     sim_screen = SimulatedScreener(simulation_params=sim_params, max_iterations=args.max_iterations)
-    sim_screen.initial_random_samples(num_initial_samples=args.initial_samples)
-
     ami = BOGP.prospector(X=X)
+
+    random_seed = np.random.randint(0, 2000000, 1)  # range of permissible values for Randomstate
+    np.random.RandomState(seed=random_seed)
+
+    sim_screen.initial_random_samples(num_initial_samples=args.initial_samples)
     sim_screen.perform_screening(model=ami, verbose=True)
 
 # TODO : Put simple tests in main to make sure data loaded ok (i.e. shape of X, y_true, status etc

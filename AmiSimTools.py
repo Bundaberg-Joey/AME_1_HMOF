@@ -5,7 +5,7 @@ This module contains classes used to run simulated screenings with the AMI on al
 """
 
 __author__ = 'Calum Hand'
-__version__ = '1.1.1'
+__version__ = '2.0.0'
 
 import warnings
 
@@ -15,59 +15,45 @@ from scipy.io import loadmat
 
 class DataTriage(object):
     """
-    The Triage takes a dataset which is to be assessed by the AMI and then performs the necessary pre-processing
+    This Parent takes a dataset which is to be assessed by the AMI and then performs the necessary pre-processing
     steps on the data set including: loading the data into numpy arrays, formatting the target values into the correct
     representation and other values.
 
-    The Technician stores these parameters as attributes which are then exported as a dictionary which can then be
-    accessed by other objects and loaded into their screenings.
+    Children of this class allow for multiple types of files to be loaded and used depending on user requirements
     """
 
-    def __init__(self):
-        self.n = None
-        self.y_true = None
-        self.y_experimental = None
-        self.status = None
+    def __init__(self, X, y):
+        assert len(X) == len(y)
+        self.X = X
+        self.y = y
+        self.n = len(self.y)
+        self.y_true, self.y_experimental = self.format_target_values(self.y, self.n)
+        self.status = np.zeros((self.n, 1))
+        self.top_100 = np.argsort(self.y)[-100:]
+
 
     @staticmethod
-    def load_dataset_csv(data_path, data_delimiter=',', headers_present=1):
+    def _load_dataset_from_path(data_path):
         """
-        Loads the features and target variables for the AME to assess from a delimited file, assumed csv.
-        The default loading removes the first row to allow headed files to be read and so should be specified if not.
-        The delimited file is assumed to be structured with target values as the final right hand column.
+        Method to be overloaded in further subclasses, loads data for the object
 
-        :param data_path: str, location of the csv data file to be read
-        :param data_delimiter: str, delimiter used in the file
-        :param headers_present: int, Number of lines in data file head containing non numeric data, needs to be removed
-        :return: features: np.array(), `m` by 'n' array which is the feature matrix of the data being modelled
-        :return: targets: np.array(), `m` sized array containing the target values for the passed features
+        :param data_path: str, path to data
+        :return: x, y: (np.ndarray, np.ndarray)
         """
-        data_set = np.loadtxt(data_path, delimiter=data_delimiter, skiprows=headers_present)
-        if data_set.size <= 0:
-            warnings.warn('Loaded data set was empty')
-        features, targets = data_set[:, :-1], data_set[:, -1]
-        return features, targets
+        return NotImplemented
 
-    @staticmethod
-    def load_dataset_matlab(data_path, feature_key, target_key):
-        """
-        Loads the feature and target variables from a matlab file where the feature matrix and target array are in
-        separate keys. The size of both the feature matrix and arrays are assessed and a warning is issued
-        if the arrays are empty.
 
-        :param data_path: str, location of the matlab file to be read
-        :param feature_key: str, dictionary key of the matlab file containing the feature data
-        :param target_key: str, dictionary key of the matlab file containing the target data
-        :return: features: np.array(), `m` by 'n' array which is the feature matrix of the data being modelled
-        :return: targets: np.array(), `m` sized array containing the target values for the passed features
+    @classmethod
+    def load_from_path(cls, data_path):
         """
-        data_set = loadmat(data_path, appendmat=False)
-        features, targets = data_set[feature_key], data_set[target_key]
-        if features.size <= 0 or targets.size <= 0:
-            warnings.warn('Loaded feature matrix or target array was empty')
-        if features.shape[0] != targets.shape[0]:
-            warnings.warn('The number of entries in the feature matrix and target array do not match')
-        return features, targets
+        load data from the overloaded class method based on the location and then instantiate the object
+
+        :param data_path: str, path to data
+        :return: object, instantiated DataTriage object
+        """
+        X, y = cls._load_dataset_from_path(data_path)
+        return cls(X, y)
+
 
     @staticmethod
     def format_target_values(y, n):
@@ -84,20 +70,52 @@ class DataTriage(object):
         y_experimental = np.full((n, 1), np.nan)  # nan as values not yet determined on initialisation
         return y_true, y_experimental
 
-    def prepare_simulation_data(self, y):
-        """
-        Updates all relevant object attributes with those determined from the loaded dataset. These attributes are then
-        returned as a dictionary so that they can be further utilised as the basis for screening experiments on this
-        loaded dataset.
 
-        :param y: np.array(), `m` sized array containing the target values for the passed features
-        :return: triaged_parameters: dict, export the technicians attributes to be used later by AMI
+class DataTriageCSV(DataTriage):
+    """
+    Child class which allows for the loading of data from a csv file
+    """
+    @staticmethod
+    def _load_dataset_from_path(path: str) -> (np.ndarray, np.ndarray):
         """
-        self.n = y.shape[0]
-        self.y_true, self.y_experimental = self.format_target_values(y, self.n)
-        self.status = np.zeros((self.n, 1))
-        triaged_parameters = vars(self)
-        return triaged_parameters
+        Loads the features and target variables for the AME to assess from a delimited file, assumed csv.
+        The default loading removes the first row to allow headed files to be read and so should be specified if not.
+        The delimited file is assumed to be structured with target values as the final right hand column.
+
+        :param path: str, location of the csv data file to be read
+        :return: features: np.array(), `m` by 'n' array which is the feature matrix of the data being modelled
+        :return: targets: np.array(), `m` sized array containing the target values for the passed features
+        """
+        data_set = np.loadtxt(path, delimiter=",", skiprows=1)
+        if data_set.size <= 0:
+            warnings.warn('Loaded data set was empty')
+        features, targets = data_set[:, :-1], data_set[:, -1]
+        return features, targets
+
+
+class DataTriageMatlab(DataTriage):
+    """
+    Child class which allows for the loading of data from a matlab file
+    """
+    @staticmethod
+    def _load_dataset_from_path(path):
+        """
+        Loads the feature and target variables from a matlab file where the feature matrix and target array are in
+        separate keys. The size of both the feature matrix and arrays are assessed and a warning is issued
+        if the arrays are empty.
+
+        :param path: str, location of the matlab file to be read
+        :return: features: np.array(), `m` by 'n' array which is the feature matrix of the data being modelled
+        :return: targets: np.array(), `m` sized array containing the target values for the passed features
+        """
+        data_set = loadmat(path, appendmat=False)
+        feature_key, target_key = "feature", "target"
+        features, targets = data_set[feature_key], data_set[target_key]
+        if features.size <= 0 or targets.size <= 0:
+            warnings.warn('Loaded feature matrix or target array was empty')
+        if features.shape[0] != targets.shape[0]:
+            warnings.warn('The number of entries in the feature matrix and target array do not match')
+        return features, targets
 
 
 ########################################################################################################################
@@ -107,20 +125,15 @@ class SimulatedScreener(object):
     """Class which uses an AMI model to perform simulated screening of materials from a dataset containing all features
     and target values for the entries.
 
-    The simulated screener takes parameters about the data as input along with the maximum number of iterations
-    that the model will run for.
+    The simulated screener takes a `data_params` object containing attributes calculated from the initial data
+    used for the simulation. It's values are "composed" out of the object for use here
     """
 
-    def __init__(self, simulation_params, max_iterations):
+    def __init__(self, data_params, max_iterations):
         self.max_iterations = max_iterations
+        self.data_params = data_params  # compose from passed object
         self.n_tested = 0
 
-        self.n = simulation_params['n']
-        self.y_true = simulation_params['y_true']
-        self.y_experimental = simulation_params['y_experimental']
-        self.status = simulation_params['status']
-
-        self.top_100 = np.argsort(self.y_true.ravel())[-100:]
 
     @staticmethod
     def determine_material_value(material, true_results):
@@ -135,6 +148,7 @@ class SimulatedScreener(object):
         determined_value = true_results[material, 0]  # 0 because column vector indexing
         return determined_value
 
+
     def initial_random_samples(self, num_initial_samples):
         """
         Selects a number of random materials for the AMI to assess and performs pseudo experiments on all of them
@@ -143,21 +157,27 @@ class SimulatedScreener(object):
         :param num_initial_samples: int, number of data points to be sampled randomly from initial data
         :return: N/A updates internal parameters
         """
-        initial_materials = np.random.choice(self.n, num_initial_samples, replace=False)  # n random index values
+        initial_materials = np.random.choice(self.data_params.n, num_initial_samples, replace=False)
+        # n random index values
+
         for material_index in initial_materials:
-            self.status[material_index] = 2
-            self.y_experimental[material_index] = self.determine_material_value(material_index, self.y_true)
+            material_value = self.determine_material_value(material_index, self.data_params.y_true)
+            self.data_params.y_experimental[material_index] = material_value
+            self.data_params.status[material_index] = 2
             self.n_tested += 1
+
 
     def user_updates(self):
         """
         Provides user updates on the status of the AMI screening. The current AMI iteration is provided along with the
         number of top 100 performing materials (determined from loaded dataset) also.
         """
-        checked_materials = np.where(self.status[:, 0] == 2)[0]
-        top_materials_found = sum(1 for i in range(self.n) if i in self.top_100 and i in checked_materials)
+        checked_materials = np.where(self.data_params.status[:, 0] == 2)[0]
+        top_100 = self.data_params.top_100
+        top_materials_found = sum(1 for i in range(self.data_params.n) if i in top_100 and i in checked_materials)
         print(F'AMI Iteration {self.n_tested}')
         print(F'{top_materials_found} out of 100 top materials found')
+
 
     def perform_screening(self, model, verbose=True):
         """
@@ -176,11 +196,12 @@ class SimulatedScreener(object):
         """
         while self.n_tested < self.max_iterations:
 
-            model.fit(self.y_experimental, self.status)
-            ipick = model.pick_next(self.status)  # sample next point
-            self.status[ipick, 0] = 1  # show that we are testing ipick
-            self.y_experimental[ipick, 0] = self.determine_material_value(ipick, self.y_true)
-            self.status[ipick, 0] = 2
+            model.fit(self.data_params.y_experimental, self.data_params.status)
+            ipick = model.pick_next(self.data_params.status)  # sample next point
+            self.data_params.status[ipick, 0] = 1  # show that we are testing ipick
+            material_value = self.determine_material_value(ipick, self.data_params.y_true)
+            self.data_params.y_experimental[ipick, 0] = material_value
+            self.data_params.status[ipick, 0] = 2
             self.n_tested += 1  # count sample and print out current score
 
             if verbose:

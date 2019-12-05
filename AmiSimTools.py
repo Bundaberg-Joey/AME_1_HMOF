@@ -5,9 +5,12 @@ This module contains classes used to run simulated screenings with the AMI on al
 """
 
 __author__ = 'Calum Hand'
-__version__ = '1.0.0'
+__version__ = '1.1.0'
+
+import warnings
 
 import numpy as np
+from scipy.io import loadmat
 
 
 class DataTriage(object):
@@ -27,22 +30,42 @@ class DataTriage(object):
         self.status = None
 
     @staticmethod
-    def load_simulation_data(data_path, data_delimiter=',', headers_present=1):
+    def load_dataset_csv(data_path, data_delimiter=',', headers_present=1):
         """
         Loads the features and target variables for the AME to assess from a delimited file, assumed csv.
         The default loading removes the first row to allow headed files to be read and so should be specified if not.
         The delimited file is assumed to be structured with target values as the final right hand column.
 
-        :param data_path: str, location of the the data file to be read
+        :param data_path: str, location of the csv data file to be read
         :param data_delimiter: str, delimiter used in the file
         :param headers_present: int, Number of lines in data file head containing non numeric data, needs to be removed
         :return: features: np.array(), `m` by 'n' array which is the feature matrix of the data being modelled
-        :return: labels: np.array(), `m` sized array containing the target values for the passed features
+        :return: targets: np.array(), `m` sized array containing the target values for the passed features
         """
         data_set = np.loadtxt(data_path, delimiter=data_delimiter, skiprows=headers_present)
-        assert data_set.size > 0, 'Loaded data set was empty'
-        features, labels = data_set[:, :-1], data_set[:, -1]
-        return features, labels
+        if data_set.size <= 0:
+            warnings.warn('Loaded data set was empty')
+        features, targets = data_set[:, :-1], data_set[:, -1]
+        return features, targets
+
+    @staticmethod
+    def load_dataset_matlab(data_path, feature_key, target_key):
+        """
+        Loads the feature and target variables from a matlab file where the feature matrix and target array are in
+        separate keys. The size of both the feature matrix and arrays are assessed and a warning is issued
+        if the arrays are empty.
+
+        :param data_path: str, location of the matlab file to be read
+        :param feature_key: str, dictionary key of the matlab file containing the feature data
+        :param target_key: str, dictionary key of the matlab file containing the target data
+        :return: features: np.array(), `m` by 'n' array which is the feature matrix of the data being modelled
+        :return: targets: np.array(), `m` sized array containing the target values for the passed features
+        """
+        data_set = loadmat(data_path, appendmat=False)
+        features, targets = data_set[feature_key], data_set[target_key]
+        if features.size <= 0 or targets.size <= 0:
+            warnings.warn('Loaded feature matrix or target array was empty')
+        return features, targets
 
     @staticmethod
     def format_target_values(y, n):
@@ -85,6 +108,7 @@ class SimulatedScreener(object):
     The simulated screener takes parameters about the data as input along with the maximum number of iterations
     that the model will run for.
     """
+
     def __init__(self, simulation_params, max_iterations):
         self.max_iterations = max_iterations
         self.n_tested = 0
@@ -159,6 +183,5 @@ class SimulatedScreener(object):
 
             if verbose:
                 self.user_updates()
-
 
 ########################################################################################################################

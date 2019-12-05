@@ -40,7 +40,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     dt = DataTriage()
-    X, y = dt.load_simulation_data(data_path=args.data_file, data_delimiter=',', headers_present=1)
+    X, y = dt.load_dataset_csv(data_path=args.data_file, data_delimiter=',', headers_present=1)
     sim_params = dt.prepare_simulation_data(y=y)
     # loads data from csv file and then determines `status` array and other parameters as dict needed for the screening
 

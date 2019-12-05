@@ -5,7 +5,7 @@ This module contains classes used to run simulated screenings with the AMI on al
 """
 
 __author__ = 'Calum Hand'
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 
 import warnings
 
@@ -65,6 +65,8 @@ class DataTriage(object):
         features, targets = data_set[feature_key], data_set[target_key]
         if features.size <= 0 or targets.size <= 0:
             warnings.warn('Loaded feature matrix or target array was empty')
+        if features.shape[0] != targets.shape[0]:
+            warnings.warn('The number of entries in the feature matrix and target array do not match')
         return features, targets
 
     @staticmethod

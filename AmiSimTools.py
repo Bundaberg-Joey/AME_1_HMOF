@@ -5,7 +5,7 @@ This module contains classes used to run simulated screenings with the AMI on al
 """
 
 __author__ = 'Calum Hand'
-__version__ = '2.1.0'
+__version__ = '2.2.0'
 
 import warnings
 
@@ -133,6 +133,7 @@ class SimulatedScreener(object):
         self.max_iterations = max_iterations
         self.data_params = data_params  # compose from passed object
         self.n_tested = 0
+        self.top_100_found = []
 
 
     @staticmethod
@@ -174,10 +175,9 @@ class SimulatedScreener(object):
         """
         checked_materials = np.where(self.data_params.status[:, 0] == 2)[0]
         top_100 = self.data_params.top_100
-        top_materials_found = sum(1 for i in range(self.data_params.n) if i in top_100 and i in checked_materials)
+        self.top_100_found = [i for i in range(self.data_params.n) if i in top_100 and i in checked_materials]
         print(F'AMI Iteration {self.n_tested}')
-        print(F'{top_materials_found} out of 100 top materials found')
-
+        print(F'{len(self.top_100_found)} out of 100 top materials found')
 
     def perform_screening(self, model, verbose=True):
         """

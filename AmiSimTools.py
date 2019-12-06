@@ -5,12 +5,13 @@ This module contains classes used to run simulated screenings with the AMI on al
 """
 
 __author__ = 'Calum Hand'
-__version__ = '2.2.0'
+__version__ = '2.3.0'
 
 import warnings
+from datetime import datetime
 
 import numpy as np
-from scipy.io import loadmat
+from scipy.io import loadmat, savemat
 
 
 class DataTriage(object):
@@ -134,6 +135,7 @@ class SimulatedScreener(object):
         self.data_params = data_params  # compose from passed object
         self.n_tested = 0
         self.top_100_found = []
+        self.sim_start = datetime.now().strftime('%Y%m%d_%H%M%S')
 
 
     @staticmethod
@@ -179,6 +181,27 @@ class SimulatedScreener(object):
         print(F'AMI Iteration {self.n_tested}')
         print(F'{len(self.top_100_found)} out of 100 top materials found')
 
+
+    def simulation_output(self):
+        """
+        Saves the status of the simulator object and chosen attributes of the data object.
+        Currently saved to MatLab file for convenience but ideally will step up to hdf5 in future
+
+        :return: N/a file output
+        """
+        screen_output = {
+            'max_iterations': self.max_iterations,
+            'n_tested': self.n_tested,
+            'top_100_found': self.top_100_found,
+            'sim_start': self.sim_start,
+            'status': self.data_params.status,
+            'y_experimental': self.data_params.y_experimental
+        }
+
+        output_name = 'ami_output_' + self.sim_start + '.mat'
+        savemat(output_name, screen_output)
+
+
     def perform_screening(self, model, verbose=True):
         """
         Performs the simulated screening on the loaded dataset using the passed model. For each iteration of the model:
@@ -203,6 +226,8 @@ class SimulatedScreener(object):
             self.data_params.y_experimental[ipick, 0] = material_value
             self.data_params.status[ipick, 0] = 2
             self.n_tested += 1  # count sample and print out current score
+
+            self.simulation_output()
 
             if verbose:
                 self.user_updates()

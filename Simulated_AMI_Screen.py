@@ -27,4 +27,3 @@ if __name__ == '__main__':
     sim_screen.perform_screening(model=ami, verbose=True)
     # performs the screening of the loaded data set using the ami model after picking a number of initial samples
 
-# TODO : have SimulatedScreener output data to a file

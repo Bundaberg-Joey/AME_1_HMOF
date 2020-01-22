@@ -37,7 +37,7 @@ These fies are used to import the HMOF data and prepare it for use in the screen
 
 Contains all of the feature matrices and target values for HMOF screening
 
-###HMOF FEATURE COMPARRISON:
+### HMOF FEATURE COMPARRISON:
 * `compare_features_HMOF.py`
 * `RRMSE_HMOF.npy`
 

@@ -29,18 +29,22 @@ class prospector(object):
 
     def fit(self, Y, STATUS, ntop=100, nrecent=100, nmax=400, ntopmu=100, ntopvar=100, nkmeans=300, nkeamnsdata=5000,
             lam=1e-6):
-        """ fits hyperparameters and inducing points
-            fit a GPy dense model to get hyperparameters
-            take subsample for tested data for fitting
-            ntop top samples
-            nrecent most recent samples
-            random samples up to total of nmax
-            ntopmu most promising untested points
-            ntopvar most uncertain untested points
-            nkmeans cluster centers from untested data
-            lam controls jitter in g samples
         """
+        Fits hyperparameters and inducing points.
+        Fit a GPy dense model to get hyperparameters.
+        Take subsample for tested data for fitting.
 
+        :param Y: np.array(), experimentally determined values
+        :param STATUS: np.array(), keeps track of which materials have been assessed / what experiments conducted
+        :param ntop: int, top n samples
+        :param nrecent: int, most recent samples
+        :param nmax: int, max number of random samples to be taken
+        :param ntopmu: int, most promising untested points
+        :param ntopvar: int, most uncertain untested points
+        :param nkmeans: int, cluster centers from untested data
+        :param nkeamnsdata: int, ?
+        :param lam: float, controls jitter in g samples
+        """
         X = self.X
         untested = [i for i in range(self.n) if STATUS[i] == 0]
         tested = [i for i in range(self.n) if STATUS[i] == 2]
@@ -102,19 +106,39 @@ class prospector(object):
         self.update_counter += 1
 
     def predict(self):
-        """ get prediction on full dataset """
+        """
+        Get a prediction on full dataset
+
+        :return: mu_X_pos, var_X_pos:
+        """
         mu_X_pos = self.mu + np.matmul(self.SIG_XM, np.linalg.solve(self.SIG_MM, self.mu_M_pos - self.mu))
         var_X_pos = np.sum(np.multiply(np.linalg.solve(self.SIG_MM_pos, self.SIG_XM.T), self.SIG_XM.T), 0)
         return mu_X_pos, var_X_pos
 
     def samples(self, nsamples=1):
-        """ samples posterior on full dataset """
+        """
+        Samples posterior on full dataset
+
+        :param nsamples: int, Number of samples to draw from the posterior distribution
+
+        :return: samples_X_pos: ?
+        """
         samples_M_pos = np.random.multivariate_normal(self.mu_M_pos, self.SIG_MM_pos, nsamples).T
         samples_X_pos = self.mu + np.matmul(self.SIG_XM, np.linalg.solve(self.SIG_MM, samples_M_pos - self.mu))
         return samples_X_pos
 
     def pick_next(self, STATUS, acquisition_function='Thompson', N=100, nysamples=100):
-        """ picks next point to sample """
+        """
+
+        Picks next material to sample
+
+        :param STATUS: np.array(), keeps track of which materials have been assessed / what experiments conducted
+        :param acquisition_function: The sampling method to be used by the AMI to select new materials
+        :param N: The number of materials which the `Greedy N` algorithm is attempting to optimise for
+        :param nysamples: Number of samples to draw from posterior for Greedy N optimisation
+
+        :return: ipick: int, the index value in the feature matrix `X` for non-tested materials
+        """
         untested = [i for i in range(self.n) if STATUS[i] == 0]
         if acquisition_function == 'Thompson':
             alpha = self.samples()

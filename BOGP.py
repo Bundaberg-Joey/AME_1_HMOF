@@ -26,6 +26,7 @@ class prospector(object):
         self.n, self.d = X.shape
         self.update_counter = 0
         self.updates_per_big_fit = 10
+        self.estimate_tau_counter = 0
 
     def fit(self, Y, STATUS, ntop=100, nrecent=100, nmax=400, ntopmu=100, ntopvar=100, nkmeans=300, nkeamnsdata=5000,
             lam=1e-6):
@@ -146,6 +147,18 @@ class prospector(object):
         samples_X_pos = self.mu + np.matmul(self.SIG_XM, np.linalg.solve(self.SIG_MM, samples_M_pos - self.mu))
         return samples_X_pos
 
+    def estimate_tau(self,nsamples=10,N=100):
+        """
+        estimate of threshold for being in the top N
+        self.tau = posterior median of treshold to be in top N
+        should be updated every 10say samples
+        """
+        samples_X_pos=self.samples(nsamples)
+        taus=np.zeros(nsamples)
+        for i in range(nsamples):
+            taus[i]=np.sort(samples_X_pos[:,i])[-N]
+        self.tau=np.median(taus)
+
     def pick_next(self, STATUS, acquisition_function='Thompson', N=100, nysamples=100):
         """
 
@@ -172,3 +185,10 @@ class prospector(object):
             alpha = np.random.rand(self.n)
         ipick = untested[np.argmax(alpha[untested])]
         return ipick
+
+ 
+## equation for expected improvement 
+#(mu_y_pos-ymax)*norm.cdf(np.divide(mu_y_pos-ymax,sig_y_pos))+sig_y_pos*norm.pdf(np.divide(mu_y_pos-ymax,sig_y_pos))
+#
+## equation for greedy tau 
+1-norm.cdf(np.divide(self.tau-mu_X_pos,var_X_pos**0.5))

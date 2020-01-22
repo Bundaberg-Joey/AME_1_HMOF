@@ -87,7 +87,7 @@ class DataTriageCSV(DataTriage):
         :return: features: np.array(), `m` by 'n' array which is the feature matrix of the data being modelled
         :return: targets: np.array(), `m` sized array containing the target values for the passed features
         """
-        data_set = np.loadtxt(path, delimiter=",", skiprows=1)
+        data_set = np.loadtxt(path, delimiter=",", skiprows=1, dtype='float')
         if data_set.size <= 0:
             warnings.warn('Loaded data set was empty')
         features, targets = data_set[:, :-1], data_set[:, -1]
@@ -222,6 +222,7 @@ class SimulatedScreener(object):
             model.fit(self.data_params.y_experimental, self.data_params.status)
             ipick = model.pick_next(self.data_params.status)  # sample next point
             self.data_params.status[ipick, 0] = 1  # show that we are testing ipick
+            """ this next line is the 'experiment happening' """
             material_value = self.determine_material_value(ipick, self.data_params.y_true)
             self.data_params.y_experimental[ipick, 0] = material_value
             self.data_params.status[ipick, 0] = 2

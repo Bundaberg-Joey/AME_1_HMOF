@@ -18,11 +18,11 @@ This cuts down the simulation time from full simulation to a quick index search 
 
 The classes used to simulate the screening are located in `AmiSimTools.py` and the script to perform the screening is `Simulated_AMI_Screen.py`.
 
-### `AMmi_Sim_Tools`
-Lorem Ipsum
+### `Ami_Sim_Tools`
+Contains classes for the loading of simulation data and the execution of thos simulated screenings with the AMI / other such model.
 
 ### `Simluated_AMI_Screen`
-Lorem Ipsum
+A Python script using the classes listed in the sim tools file.
 
 ## Data Preparation `Data_Prep`:
 ### HMOF DATA IMPORT: 

@@ -12,8 +12,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--data_file', action='store', default=data_location, help='path to data file')
-    parser.add_argument('-i', '--initial_samples', action='store', default=100, help='# of random samples AMI takes')
-    parser.add_argument('-m', '--max_iterations', action='store', default=2000, help='# of materials AMI will sample')
+    parser.add_argument('-i', '--initial_samples', action='store', type=int, default=100, help='# of random samples AMI takes')
+    parser.add_argument('-m', '--max_iterations', action='store', type=int, default=2000, help='# of materials AMI will sample')
     args = parser.parse_args()
 
     sim_data = DataTriageCSV.load_from_path(args.data_file)

@@ -125,22 +125,24 @@ class prospector(object):
         """ 
         key attributes updated by fit 
         
+        self.SIG_XM : prior covarience matrix between data and inducing points
+        self.SIG_MM : prior covarience matrix at inducing points
+        
         self.SIG_MM_pos : posterior covarience matrix at inducing points
         self.mu_M_pos : posterior mean at inducing points 
-        self.SIG_XM : posterior covarience matrix between data and inducing points
+        
         """
         
     def predict(self):
         """
         Get a prediction on full dataset
         just as in MA50263
-        JAMES TO FIX VAR PART
 
         :return: mu_X_pos, var_X_pos:
         """
+        
         mu_X_pos = self.mu + np.matmul(self.SIG_XM, np.linalg.solve(self.SIG_MM, self.mu_M_pos - self.mu))
-#        self.Vz=np.linalg.solve(self.SIG_MMz,np.linalg.solve(self.SIG_MMz,self.SIG_MM_posz).T)
-        var_X_pos = np.sum(np.multiply(np.matmul(self.SIG_MM_pos, self.SIG_XM.T), self.SIG_XM.T), 0)
+        var_X_pos = np.sum(np.multiply(np.matmul(np.linalg.solve(self.SIG_MM,np.linalg.solve(self.SIG_MM,self.SIG_MM_pos).T), self.SIG_XM.T), self.SIG_XM.T), 0)
         return mu_X_pos, var_X_pos
 
     def samples(self, nsamples=1):

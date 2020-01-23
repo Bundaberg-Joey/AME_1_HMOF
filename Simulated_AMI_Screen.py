@@ -3,7 +3,8 @@
 import argparse
 
 import BOGP
-from AmiSimTools import DataTriageCSV, SimulatedScreener
+from AmiSimTools.DataTriage import DataTriageCSV
+from AmiSimTools.SimScreen import SimulatedScreenerSerial
 
 
 if __name__ == '__main__':
@@ -21,9 +22,9 @@ if __name__ == '__main__':
     sim_data = DataTriageCSV.load_from_path(args.data_file)
     # loads data from csv file and then determines `status` array and other parameters as dict needed for the screening
 
-    sim_screen = SimulatedScreener(data_params=sim_data, max_iterations=args.max_iterations, sim_code=args.sim_code)
+    sim_screen = SimulatedScreenerSerial(data_params=sim_data, max_iterations=args.max_iterations, sim_code=args.sim_code)
     ami = BOGP.prospector(X=sim_data.X, acquisition_function=args.acquisition)
-    # initialises the AMI model and the simulation screener with the previously exported dict
+    # initialises the AMI model and the simulation screener with the triaged data
 
     sim_screen.initial_random_samples(num_initial_samples=args.initial_samples)
     sim_screen.perform_screening(model=ami, verbose=True)

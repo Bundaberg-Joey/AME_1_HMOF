@@ -191,4 +191,4 @@ class prospector(object):
 #(mu_y_pos-ymax)*norm.cdf(np.divide(mu_y_pos-ymax,sig_y_pos))+sig_y_pos*norm.pdf(np.divide(mu_y_pos-ymax,sig_y_pos))
 #
 ## equation for greedy tau 
-1-norm.cdf(np.divide(self.tau-mu_X_pos,var_X_pos**0.5))
+#1-norm.cdf(np.divide(self.tau-mu_X_pos,var_X_pos**0.5))

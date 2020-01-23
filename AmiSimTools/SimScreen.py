@@ -4,10 +4,11 @@ This file contains classes used to run the simulated screenings of the AMI eithe
 """
 
 __author__ = 'Calum Hand'
-__version__ = '1.0.0'
+__version__ = '1.1.0'
 
 
 from datetime import datetime
+import uuid
 
 import numpy as np
 from scipy.io import savemat
@@ -29,6 +30,7 @@ class SimulatedScreenerSerial(object):
         self.top_100_found = []
         self.sim_start = datetime.now().strftime('%Y%m%d_%H%M%S')
         self.test_order = []
+        self.file_uuid = str(uuid.uuid4())
 
 
     @staticmethod
@@ -94,10 +96,11 @@ class SimulatedScreenerSerial(object):
             'top_100_found': self.top_100_found,
             'sim_start': self.sim_start,
             'status': self.data_params.status,
-            'y_experimental': self.data_params.y_experimental
+            'y_experimental': self.data_params.y_experimental,
+            'file_uuid': self.file_uuid
         }
 
-        output_name = 'ami_output_' + self.sim_start + '.mat'
+        output_name = F'ami_output_{self.file_uuid}.mat'
         savemat(output_name, screen_output)
 
 

@@ -4,7 +4,7 @@ This file contains classes used to run the simulated screenings of the AMI eithe
 """
 
 __author__ = 'Calum Hand'
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 
 
 from datetime import datetime
@@ -95,8 +95,6 @@ class SimulatedScreenerSerial(object):
             'test_order': self.test_order,
             'top_100_found': self.top_100_found,
             'sim_start': self.sim_start,
-            'status': self.data_params.status,
-            'y_experimental': self.data_params.y_experimental,
             'file_uuid': self.file_uuid
         }
 

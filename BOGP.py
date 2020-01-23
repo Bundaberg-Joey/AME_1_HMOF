@@ -14,19 +14,23 @@ __version__ = '2.0.1'
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.metrics.pairwise import euclidean_distances
+from scipy.stats import norm
 
 import GPy
 
 
 class prospector(object):
 
-    def __init__(self, X):
+    def __init__(self, X,acquisition_function='Thompson'):
         """ Initializes by storing all feature values """
         self.X = X
         self.n, self.d = X.shape
         self.update_counter = 0
         self.updates_per_big_fit = 10
         self.estimate_tau_counter = 0
+        self.tau_update = 10
+        self.acquisition_function=acquisition_function
+        self.y_max = None
 
     def fit(self, Y, STATUS, ntop=100, nrecent=100, nmax=400, ntopmu=100, ntopvar=100, nkmeans=300, nkeamnsdata=5000,
             lam=1e-6):
@@ -50,6 +54,7 @@ class prospector(object):
         untested = [i for i in range(self.n) if STATUS[i] == 0]
         tested = [i for i in range(self.n) if STATUS[i] == 2]
         ytested = Y[tested].reshape(-1)
+        self.y_max = np.max(ytested)
         # each 10 fits we update the hyperparameters, otherwise we just update the data which is a lot faster
         if np.mod(self.update_counter, self.updates_per_big_fit) == 0:
 
@@ -129,11 +134,13 @@ class prospector(object):
         """
         Get a prediction on full dataset
         just as in MA50263
+        JAMES TO FIX VAR PART
 
         :return: mu_X_pos, var_X_pos:
         """
         mu_X_pos = self.mu + np.matmul(self.SIG_XM, np.linalg.solve(self.SIG_MM, self.mu_M_pos - self.mu))
-        var_X_pos = np.sum(np.multiply(np.linalg.solve(self.SIG_MM_pos, self.SIG_XM.T), self.SIG_XM.T), 0)
+#        self.Vz=np.linalg.solve(self.SIG_MMz,np.linalg.solve(self.SIG_MMz,self.SIG_MM_posz).T)
+        var_X_pos = np.sum(np.multiply(np.matmul(self.SIG_MM_pos, self.SIG_XM.T), self.SIG_XM.T), 0)
         return mu_X_pos, var_X_pos
 
     def samples(self, nsamples=1):
@@ -159,7 +166,7 @@ class prospector(object):
             taus[i]=np.sort(samples_X_pos[:,i])[-N]
         self.tau=np.median(taus)
 
-    def pick_next(self, STATUS, acquisition_function='Thompson', N=100, nysamples=100):
+    def pick_next(self, STATUS, N=100, nysamples=100):
         """
 
         Picks next material to sample
@@ -172,23 +179,39 @@ class prospector(object):
         :return: ipick: int, the index value in the feature matrix `X` for non-tested materials
         """
         untested = [i for i in range(self.n) if STATUS[i] == 0]
-        if acquisition_function == 'Thompson':
+        if self.acquisition_function == 'Thompson':
             alpha = self.samples()
-        elif acquisition_function == 'Greedy_N':
+        
+        elif self.acquisition_function == 'Greedy_N':
             y_samples = self.samples(nysamples)
             alpha = np.zeros(self.n)
             for j in range(nysamples):
                 # count number of times each point is in the top N for a sample 
                 alpha[np.argpartition(y_samples[:, j], -N)[-N:]] += 1
+        
+        elif self.acquisition_function == 'Greedy_tau':
+            if np.mod(self.estimate_tau_counter, self.tau_update) == 0:
+                self.estimate_tau()
+                self.estimate_tau_counter += 1
+            else:
+                self.estimate_tau_counter += 1
+            mu_X_pos, var_X_pos = self.predict()
+            alpha = 1-norm.cdf(np.divide(self.tau-mu_X_pos,var_X_pos**0.5))
+        
+        elif self.acquisition_function == 'EI':
+            mu_X_pos, var_X_pos = self.predict()
+            sig_X_pos = var_X_pos**0.5
+            alpha = (mu_X_pos-self.y_max)*norm.cdf(np.divide(mu_X_pos-self.y_max,sig_X_pos))+sig_X_pos*norm.pdf(np.divide(mu_X_pos-self.y_max,sig_X_pos))
+        
         else:
             # if no valid acquisition_function entered then pick at random 
             alpha = np.random.rand(self.n)
+            print('enter a valid acquisition function - picking randomly')
         ipick = untested[np.argmax(alpha[untested])]
         return ipick
 
  
 ## equation for expected improvement 
-#(mu_y_pos-ymax)*norm.cdf(np.divide(mu_y_pos-ymax,sig_y_pos))+sig_y_pos*norm.pdf(np.divide(mu_y_pos-ymax,sig_y_pos))
 #
 ## equation for greedy tau 
 #1-norm.cdf(np.divide(self.tau-mu_X_pos,var_X_pos**0.5))

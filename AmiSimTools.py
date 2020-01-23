@@ -5,7 +5,7 @@ This module contains classes used to run simulated screenings with the AMI on al
 """
 
 __author__ = 'Calum Hand'
-__version__ = '2.3.0'
+__version__ = '2.4.0'
 
 import warnings
 from datetime import datetime
@@ -130,9 +130,10 @@ class SimulatedScreener(object):
     used for the simulation. It's values are "composed" out of the object for use here
     """
 
-    def __init__(self, data_params, max_iterations):
+    def __init__(self, data_params, max_iterations, sim_code='N/A'):
         self.max_iterations = max_iterations
         self.data_params = data_params  # compose from passed object
+        self.sim_code = sim_code
         self.n_tested = 0
         self.top_100_found = []
         self.sim_start = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -190,6 +191,7 @@ class SimulatedScreener(object):
         :return: N/a file output
         """
         screen_output = {
+            'sim_code': self.sim_code,
             'max_iterations': self.max_iterations,
             'n_tested': self.n_tested,
             'top_100_found': self.top_100_found,

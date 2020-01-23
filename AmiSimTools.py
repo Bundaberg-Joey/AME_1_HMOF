@@ -5,7 +5,7 @@ This module contains classes used to run simulated screenings with the AMI on al
 """
 
 __author__ = 'Calum Hand'
-__version__ = '2.3.0'
+__version__ = '2.4.0'
 
 import warnings
 from datetime import datetime
@@ -130,12 +130,14 @@ class SimulatedScreener(object):
     used for the simulation. It's values are "composed" out of the object for use here
     """
 
-    def __init__(self, data_params, max_iterations):
+    def __init__(self, data_params, max_iterations, sim_code='N/A'):
         self.max_iterations = max_iterations
         self.data_params = data_params  # compose from passed object
+        self.sim_code = sim_code
         self.n_tested = 0
         self.top_100_found = []
         self.sim_start = datetime.now().strftime('%Y%m%d_%H%M%S')
+        self.test_order = []
 
 
     @staticmethod
@@ -168,18 +170,22 @@ class SimulatedScreener(object):
             self.data_params.y_experimental[material_index] = material_value
             self.data_params.status[material_index] = 2
             self.n_tested += 1
+            self.test_order.append(material_index)
 
 
-    def user_updates(self):
+    def user_updates(self, display=True):
         """
         Provides user updates on the status of the AMI screening. The current AMI iteration is provided along with the
         number of top 100 performing materials (determined from loaded dataset) also.
+
+        :param display: Boolean, states if the output should be written to the screen or not during screening
         """
         checked_materials = np.where(self.data_params.status[:, 0] == 2)[0]
         top_100 = self.data_params.top_100
         self.top_100_found = [i for i in range(self.data_params.n) if i in top_100 and i in checked_materials]
-        print(F'AMI Iteration {self.n_tested}')
-        print(F'{len(self.top_100_found)} out of 100 top materials found')
+        if display:
+            print(F'AMI Iteration {self.n_tested}')
+            print(F'{len(self.top_100_found)} out of 100 top materials found')
 
 
     def simulation_output(self):
@@ -190,8 +196,10 @@ class SimulatedScreener(object):
         :return: N/a file output
         """
         screen_output = {
+            'sim_code': self.sim_code,
             'max_iterations': self.max_iterations,
             'n_tested': self.n_tested,
+            'test_order': self.test_order,
             'top_100_found': self.top_100_found,
             'sim_start': self.sim_start,
             'status': self.data_params.status,
@@ -227,10 +235,11 @@ class SimulatedScreener(object):
             self.data_params.y_experimental[ipick, 0] = material_value
             self.data_params.status[ipick, 0] = 2
             self.n_tested += 1  # count sample and print out current score
+            self.test_order.append(ipick)  # update the order of materials sampled
 
+            self.user_updates(display=verbose)
             self.simulation_output()
 
-            if verbose:
-                self.user_updates()
+
 
 ########################################################################################################################

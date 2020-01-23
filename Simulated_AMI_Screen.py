@@ -12,14 +12,15 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--data_file', action='store', default=data_location, help='path to data file')
-    parser.add_argument('-i', '--initial_samples', action='store', default=100, help='# of random samples AMI takes')
-    parser.add_argument('-m', '--max_iterations', action='store', default=2000, help='# of materials AMI will sample')
+    parser.add_argument('-i', '--initial_samples', action='store', type=int, default=100, help='# of random samples AMI takes')
+    parser.add_argument('-m', '--max_iterations', action='store', type=int, default=2000, help='# of materials AMI will sample')
+    parser.add_argument('-s', '--sim_code', action='store', type=str, default='N/A', help='Reference code for simulation')
     args = parser.parse_args()
 
     sim_data = DataTriageCSV.load_from_path(args.data_file)
     # loads data from csv file and then determines `status` array and other parameters as dict needed for the screening
 
-    sim_screen = SimulatedScreener(data_params=sim_data, max_iterations=args.max_iterations)
+    sim_screen = SimulatedScreener(data_params=sim_data, max_iterations=args.max_iterations, sim_code=args.sim_code)
     ami = BOGP.prospector(X=sim_data.X)
     # initialises the AMI model and the simulation screener with the previously exported dict
 

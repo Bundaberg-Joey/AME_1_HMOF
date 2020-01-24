@@ -147,6 +147,21 @@ class SimulatedScreenerParallel(object):
         self.workers = [(0, 0)] * self.nthreads  # now follow controller, set up initial jobs separately
         self.finish_time = np.zeros(self.nthreads)  # times the workers will finish at, here is all zero
 
+
+    @staticmethod
+    def determine_material_value(material, true_results):
+        """
+        Performs pseudo experiment for the AMI where the performance value of the AMI selected material is looked up in
+        the loaded data array
+
+        :param material: int, index of the material chosen in the target values
+        :param true_results: np.array(), `m` sized array containing the target values for the passed features
+        :return: determined_value: float, the target value for the passed material index
+        """
+        determined_value = true_results[material, 0]  # 0 because column vector indexing
+        return determined_value
+
+
     def _screener_init(self):
         """
         starts by selecting a material and performing cheap and expensive test on it
@@ -155,7 +170,7 @@ class SimulatedScreenerParallel(object):
         self.model.uu.remove(subject)  # selects from untested and performs experiments
         self.model.tt.append(subject)
         self.sim_budget -= self.test_cost  # update budget
-        self.model.y[subject] = self.data_params.y_true[subject]  # update model
+        self.data_params.y_experimental[subject] = self.determine_material_value(subject, self.data_params.y_true)
 
     def _select_and_run_experiment(self, i):
         """
@@ -184,7 +199,7 @@ class SimulatedScreenerParallel(object):
         idone = self.workers[i][0]
 
         self.model.ty.remove(idone)
-        self.model.y[idone] = self.data_params.y_true[idone]
+        self.data_params.y_experimental[idone] = self.determine_material_value(idone, self.data_params.y_true)
         self.model.tu.remove(idone)
         self.model.tt.append(idone)
         self.history.append((idone, 'y'))

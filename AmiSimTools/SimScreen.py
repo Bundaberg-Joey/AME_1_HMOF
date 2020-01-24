@@ -137,8 +137,7 @@ class SimulatedScreenerSerial(object):
 
 class SimulatedScreenerParallel(object):
 
-    def __init__(self, model, data_params, test_cost, sim_budget, nthreads):
-        self.model = model
+    def __init__(self, data_params, test_cost, sim_budget, nthreads):
         self.data_params = data_params  # obj, contains triaged data including `y_true`, `y_experimental` and `status`
         self.test_cost = test_cost  # float, cost incurred when `assessing` a candidate
         self.sim_budget = sim_budget  # float, total amount of resources which can be used for the screening
@@ -162,7 +161,7 @@ class SimulatedScreenerParallel(object):
         return determined_value
 
 
-    def _screener_init(self):
+    def _initial_random_sample(self):
         """
         starts by selecting a material and performing cheap and expensive test on it
         """
@@ -172,14 +171,14 @@ class SimulatedScreenerParallel(object):
         self.data_params.status[candidate] = 2  # update status
 
 
-    def _select_and_run_experiment(self, i):
+    def _run_experiment(self, i, ipick):
         """
         Passed model selects a material to sample.
         If the material has not been tested before then a cheap test is run, otherwise run expensive.
         After each test, the budget is updated (contained within the model ?) and the worker finish time updated
         :param i: int, index of the worker to perform the task
+        :param ipick: int, index of the material to be assessed
         """
-        ipick = self.model.pick()
         self.workers[i] = (ipick, 'y')
         self.sim_budget -= self.test_cost
         self.finish_time[i] += np.random.uniform(self.test_cost, self.test_cost * 2)
@@ -209,23 +208,26 @@ class SimulatedScreenerParallel(object):
             return i
 
 
-    def full_screen(self):
+    def perform_screening(self, model):
         """
         Performs the full automated screening with multiple workers.
         First each worker (determined by the number of threads) is assigned a material to investigate.
         After this initialisation, the screener alternates selecting and recording experiments.
         This proceeds until the budget is spent (all the while recording the history of the work).
         After the budget is spent s.t. no expensive tests can be run, the remaining jobs finish.
+        :param model: The AMI object performing the screening of the materials being investigated
         :return: self.history: list, full accounting of what materials were sampled when and where
         """
-        self._screener_init()  # initialise the model with a single expensive test
+        self._initial_random_sample()  # initialise the model with a single expensive test
 
         for i in range(self.nthreads):  # at the start, give the workers a job to do each
-            self._select_and_run_experiment(i)
+            ipick = model.pick_next(self.data_params.status)
+            self._run_experiment(i, ipick)
 
         while self.sim_budget >= self.test_cost:  # spend budget till cant afford any more expensive tests
             i = self._record_experiment(final=False)
-            self._select_and_run_experiment(i)
+            ipick = model.pick_next(self.data_params.status)
+            self._run_experiment(i, ipick)
 
         for i in range(self.nthreads):  # finish up any remaining jobs and record their results
             self._record_experiment(final=True)
@@ -234,3 +236,4 @@ class SimulatedScreenerParallel(object):
 
 
 # TODO: update SimulatedScreenerParallel to work with `AME_1`
+# TODO: Need to alter `pick` and `fit` in the self.model

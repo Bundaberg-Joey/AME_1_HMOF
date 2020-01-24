@@ -217,3 +217,8 @@ class SimulatedScreenerParallel(object):
             self._record_experiment(final=True)
 
         return self.history
+
+
+# TODO: update SimulatedScreenerParallel to work with `AME_1`
+# TODO: update SimulatedScreenerParallel to accept y_true, y_experimental, STATUS from DataTriage
+

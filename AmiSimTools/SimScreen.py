@@ -181,7 +181,6 @@ class SimulatedScreenerParallel(object):
         """
         ipick = self.model.pick()
         self.workers[i] = (ipick, 'y')
-        self.model.ty.append(ipick)
         self.sim_budget -= self.test_cost
         self.finish_time[i] += np.random.uniform(self.test_cost, self.test_cost * 2)
 
@@ -199,7 +198,6 @@ class SimulatedScreenerParallel(object):
         i = np.argmin(self.finish_time)  # get the worker which is closest to finishing
         idone = self.workers[i][0]
 
-        self.model.ty.remove(idone)
         self.data_params.y_experimental[idone] = self.determine_material_value(idone, self.data_params.y_true)
         self.data_params.status[idone] = 2  # update status
         self.history.append((idone, 'y'))
@@ -236,4 +234,3 @@ class SimulatedScreenerParallel(object):
 
 
 # TODO: update SimulatedScreenerParallel to work with `AME_1`
-# TODO: update SimulatedScreenerParallel to accept y_true, y_experimental, STATUS from DataTriage

@@ -137,9 +137,9 @@ class SimulatedScreenerSerial(object):
 
 class SimulatedScreenerParallel(object):
 
-    def __init__(self, model, y, test_cost, sim_budget, nthreads):
+    def __init__(self, model, data_params, test_cost, sim_budget, nthreads):
         self.model = model
-        self.y = y  # np.array(), expensive test data
+        self.data_params = data_params  # obj, contains triaged data including `y_true`, `y_experimental` and `status`
         self.test_cost = test_cost  # float, cost incurred when `assessing` a candidate
         self.sim_budget = sim_budget  # float, total amount of resources which can be used for the screening
         self.nthreads = nthreads  # int, number of threads to work on
@@ -155,7 +155,7 @@ class SimulatedScreenerParallel(object):
         self.model.uu.remove(subject)  # selects from untested and performs experiments
         self.model.tt.append(subject)
         self.sim_budget -= self.test_cost  # update budget
-        self.model.y[subject] = self.y[subject]  # update model
+        self.model.y[subject] = self.data_params.y_true[subject]  # update model
 
     def _select_and_run_experiment(self, i):
         """
@@ -184,7 +184,7 @@ class SimulatedScreenerParallel(object):
         idone = self.workers[i][0]
 
         self.model.ty.remove(idone)
-        self.model.y[idone] = self.y[idone]
+        self.model.y[idone] = self.data_params.y_true[idone]
         self.model.tu.remove(idone)
         self.model.tt.append(idone)
         self.history.append((idone, 'y'))
@@ -221,4 +221,3 @@ class SimulatedScreenerParallel(object):
 
 # TODO: update SimulatedScreenerParallel to work with `AME_1`
 # TODO: update SimulatedScreenerParallel to accept y_true, y_experimental, STATUS from DataTriage
-

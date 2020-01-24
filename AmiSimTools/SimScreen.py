@@ -137,10 +137,10 @@ class SimulatedScreenerSerial(object):
 
 class SimulatedScreenerParallel(object):
 
-    def __init__(self, model, y, cy, nthreads):
+    def __init__(self, model, y, test_cost, nthreads):
         self.model = model
         self.y = y  # np.array(), expensive test data
-        self.cy = cy  # float, cost of expensive
+        self.test_cost = test_cost  # float, cost incurred when `assessing` a candidate
         self.nthreads = nthreads  # int, number of threads to work on
         self.history = []  # lists to store simulation history
         self.workers = [(0, 0)] * self.nthreads  # now follow controller, set up initial jobs separately
@@ -153,7 +153,7 @@ class SimulatedScreenerParallel(object):
         subject = 0
         self.model.uu.remove(subject)  # selects from untested and performs experiments
         self.model.tt.append(subject)
-        self.model.b -= self.cy  # update budget
+        self.model.b -= self.test_cost  # update budget
         self.model.y[subject] = self.y[subject]  # update model
 
     def _select_and_run_experiment(self, i):
@@ -166,8 +166,8 @@ class SimulatedScreenerParallel(object):
         ipick = self.model.pick()
         self.workers[i] = (ipick, 'y')
         self.model.ty.append(ipick)
-        self.model.b -= self.cy
-        self.finish_time[i] += np.random.uniform(self.cy, self.cy * 2)
+        self.model.b -= self.test_cost
+        self.finish_time[i] += np.random.uniform(self.test_cost, self.test_cost * 2)
 
     def _record_experiment(self, final):
         """
@@ -208,7 +208,7 @@ class SimulatedScreenerParallel(object):
         for i in range(self.nthreads):  # at the start, give the workers a job to do each
             self._select_and_run_experiment(i)
 
-        while self.model.b >= self.cy:  # spend budget till cant afford any more expensive tests
+        while self.model.b >= self.test_cost:  # spend budget till cant afford any more expensive tests
             i = self._record_experiment(final=False)
             self._select_and_run_experiment(i)
 

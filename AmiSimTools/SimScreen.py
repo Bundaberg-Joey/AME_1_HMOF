@@ -137,11 +137,9 @@ class SimulatedScreenerSerial(object):
 
 class SimulatedScreenerParallel(object):
 
-    def __init__(self, model, y, z, cz, cy, nthreads):
+    def __init__(self, model, y, cy, nthreads):
         self.model = model
         self.y = y  # np.array(), expensive test data
-        self.z = z  # np.array(), cheap test data
-        self.cz = cz  # float, cost of cheap
         self.cy = cy  # float, cost of expensive
         self.nthreads = nthreads  # int, number of threads to work on
         self.history = []  # lists to store simulation history
@@ -153,11 +151,10 @@ class SimulatedScreenerParallel(object):
         starts by selecting a material and performing cheap and expensive test on it
         """
         subject = 0
-        self.model.uu.remove(subject)  # selects from untested and performs e
+        self.model.uu.remove(subject)  # selects from untested and performs experiments
         self.model.tt.append(subject)
-        self.model.b -= (self.cz + self.cy)  # update budget
-        self.model.z[subject] = self.z[subject]  # update model
-        self.model.y[subject] = self.y[subject]
+        self.model.b -= self.cy  # update budget
+        self.model.y[subject] = self.y[subject]  # update model
 
     def _select_and_run_experiment(self, i):
         """
@@ -167,16 +164,10 @@ class SimulatedScreenerParallel(object):
         :param i: int, index of the worker to perform the task
         """
         ipick = self.model.pick()
-        if ipick in self.model.uu:
-            self.workers[i] = (ipick, 'z')
-            self.model.tz.append(ipick)
-            self.model.b -= self.cz
-            self.finish_time[i] += np.random.uniform(self.cz, self.cz * 2)
-        else:
-            self.workers[i] = (ipick, 'y')
-            self.model.ty.append(ipick)
-            self.model.b -= self.cy
-            self.finish_time[i] += np.random.uniform(self.cy, self.cy * 2)
+        self.workers[i] = (ipick, 'y')
+        self.model.ty.append(ipick)
+        self.model.b -= self.cy
+        self.finish_time[i] += np.random.uniform(self.cy, self.cy * 2)
 
     def _record_experiment(self, final):
         """
@@ -190,18 +181,13 @@ class SimulatedScreenerParallel(object):
         """
         i = np.argmin(self.finish_time)  # get the worker which is closest to finishing
         idone = self.workers[i][0]
-        if self.workers[i][1] == 'z':
-            self.model.tz.remove(idone)
-            self.model.z[idone] = self.z[idone]
-            self.model.uu.remove(idone)
-            self.model.tu.append(idone)
-            self.history.append((idone, 'z'))
-        else:
-            self.model.ty.remove(idone)
-            self.model.y[idone] = self.y[idone]
-            self.model.tu.remove(idone)
-            self.model.tt.append(idone)
-            self.history.append((idone, 'y'))
+
+        self.model.ty.remove(idone)
+        self.model.y[idone] = self.y[idone]
+        self.model.tu.remove(idone)
+        self.model.tt.append(idone)
+        self.history.append((idone, 'y'))
+
         if final:
             self.workers[i] = None
             self.finish_time[i] = np.inf

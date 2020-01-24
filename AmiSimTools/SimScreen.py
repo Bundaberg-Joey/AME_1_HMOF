@@ -161,6 +161,19 @@ class SimulatedScreenerParallel(object):
         return determined_value
 
 
+    def _log_history(self, **kwargs):
+        """
+        Logs the history of the parallel screening.
+        Continually updates by appending a dictionary to the history attribute which is eventually returned as a list.
+        The list of dictionaries can then be readily converted into a pandas DataFrame after screening is complete.
+        The start and end of experiments require different details saved, pandas allows for multiple different keywords
+        allowing different keys to be passed depending on time of experiment.
+
+        :param kwargs: dict, contains useful information about the simulated screening
+        """
+        self.history.append(kwargs)
+
+
     def _initial_random_sample(self):
         """
         starts by selecting a material and performing cheap and expensive test on it
@@ -181,7 +194,12 @@ class SimulatedScreenerParallel(object):
         """
         self.workers[i] = (ipick, 'y')
         self.sim_budget -= self.test_cost
-        self.finish_time[i] += np.random.uniform(self.test_cost, self.test_cost * 2)
+
+        experiment_length = np.random.uniform(self.test_cost, self.test_cost * 2)
+        start = self.finish_time[i]
+        self.finish_time[i] += experiment_length
+
+        self._log_history(note='start', worker=i, candidate=ipick, time=start, exp_len=experiment_length)
 
 
     def _record_experiment(self, final):
@@ -197,9 +215,12 @@ class SimulatedScreenerParallel(object):
         i = np.argmin(self.finish_time)  # get the worker which is closest to finishing
         idone = self.workers[i][0]
 
-        self.data_params.y_experimental[idone] = self.determine_material_value(idone, self.data_params.y_true)
+        experimental_value = self.determine_material_value(idone, self.data_params.y_true)
+        self.data_params.y_experimental[idone] = experimental_value
         self.data_params.status[idone] = 2  # update status
-        self.history.append((idone, 'y'))
+        end = self.finish_time[i]
+
+        self._log_history(note='end', worker=i, candidate=idone, time=end, exp_value=experimental_value)
 
         if final:
             self.workers[i] = None
@@ -236,4 +257,5 @@ class SimulatedScreenerParallel(object):
 
 
 # TODO: update SimulatedScreenerParallel to work with `AME_1`
-# TODO: Need to alter `pick` and `fit` in the self.model
+# TODO: Figure out where `model.fit()` goes in the main loop
+# TODO: Update random sampling at initialisation to be more AME 1 like

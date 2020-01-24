@@ -166,11 +166,11 @@ class SimulatedScreenerParallel(object):
         """
         starts by selecting a material and performing cheap and expensive test on it
         """
-        subject = 0
-        self.model.uu.remove(subject)  # selects from untested and performs experiments
-        self.model.tt.append(subject)
+        candidate = 0
         self.sim_budget -= self.test_cost  # update budget
-        self.data_params.y_experimental[subject] = self.determine_material_value(subject, self.data_params.y_true)
+        self.data_params.y_experimental[candidate] = self.determine_material_value(candidate, self.data_params.y_true)
+        self.data_params.status[candidate] = 2  # update status
+
 
     def _select_and_run_experiment(self, i):
         """
@@ -184,6 +184,7 @@ class SimulatedScreenerParallel(object):
         self.model.ty.append(ipick)
         self.sim_budget -= self.test_cost
         self.finish_time[i] += np.random.uniform(self.test_cost, self.test_cost * 2)
+
 
     def _record_experiment(self, final):
         """
@@ -200,8 +201,7 @@ class SimulatedScreenerParallel(object):
 
         self.model.ty.remove(idone)
         self.data_params.y_experimental[idone] = self.determine_material_value(idone, self.data_params.y_true)
-        self.model.tu.remove(idone)
-        self.model.tt.append(idone)
+        self.data_params.status[idone] = 2  # update status
         self.history.append((idone, 'y'))
 
         if final:
@@ -209,6 +209,7 @@ class SimulatedScreenerParallel(object):
             self.finish_time[i] = np.inf
         else:
             return i
+
 
     def full_screen(self):
         """

@@ -32,6 +32,7 @@ def save_data(df, meta):
 if __name__ == '__main__':
 
     data_location = r'C:\Users\crh53\OneDrive\Desktop\PHD_Experiments\E2_AMI_James\Data\Scaled_HMOF_Data.csv'
+    # data_location = r'../Scaled_HCOF_F2.csv'
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--data_file', action='store', default=data_location, help='path to data file')

@@ -36,7 +36,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--data_file', action='store', default=data_location, help='path to data file')
     parser.add_argument('-c', '--cost', action='store', type=float, default=1.0, help='cost of experiment')
-    parser.add_argument('-b', '--budget', action='store', type=float, default=50, help='simulation budget')
+    parser.add_argument('-b', '--budget', action='store', type=float, default=1000.0, help='simulation budget')
     parser.add_argument('-n', '--nthreads', action='store', type=int, default=10, help='# of parallel threads to run')
     parser.add_argument('-i', '--initial_samples', action='store', type=int, default=20, help='# of init rand samples')
     parser.add_argument('-m', '--min_samples', action='store', type=int, default=15, help='# of exp before fit')

@@ -176,7 +176,7 @@ class SimulatedScreenerParallel(object):
         self.history.append(kwargs)
 
 
-    def _run_experiment(self, i, ipick):
+    def _run_experiment(self, i, ipick, exp_note):
         """
         Passed model selects a material to sample.
         If the material has not been tested before then a cheap test is run, otherwise run expensive.
@@ -192,7 +192,7 @@ class SimulatedScreenerParallel(object):
         self.data_params.status[ipick] = 1  # update status
         self.finish_time[i] += experiment_length
 
-        self._log_history(note='start', worker=i, candidate=ipick, time=start, exp_len=experiment_length)
+        self._log_history(note=exp_note, worker=i, candidate=ipick, time=start, exp_len=experiment_length)
 
 
     def _record_experiment(self, final):
@@ -244,7 +244,7 @@ class SimulatedScreenerParallel(object):
         for i in range(self.nthreads):
             ipick = self.queued[0]
             self.queued = np.delete(self.queued, 0)
-            self._run_experiment(i, ipick)
+            self._run_experiment(i, ipick, 'start initial sample')
 
 
     def perform_screening(self, model):
@@ -265,14 +265,17 @@ class SimulatedScreenerParallel(object):
 
             if len(self.queued) > 0:  # if queued materials then sample, else let model sample
                 ipick = self.queued[0]
+                note = 'start initial sample'
                 self.queued = np.delete(self.queued, 0)
             else:
                 self._fit_if_safe(model)
                 if self.model_fitted:
                     ipick = model.pick_next(self.data_params.status)  # fit model and then allow to pick
+                    note = 'start ami sample'
                 else:
                     ipick = np.random.choice([i for i in range(self.data_params.n) if self.data_params.status[i] == 0])
-            self._run_experiment(i, ipick)
+                    note = 'start ami rand sample'
+            self._run_experiment(i, ipick, exp_note=note)
 
         for i in range(self.nthreads):  # finish up any remaining jobs and record their results
             self._record_experiment(final=True)

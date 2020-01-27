@@ -1,3 +1,4 @@
+pandas
 GPy
 numpy
 scikit-learn

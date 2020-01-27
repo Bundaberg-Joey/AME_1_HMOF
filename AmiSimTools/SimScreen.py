@@ -3,8 +3,7 @@ This file contains classes used to run the simulated screenings of the AMI eithe
 """
 
 __author__ = 'Calum Hand'
-__version__ = '1.1.2'
-
+__version__ = '2.1.2'
 
 from datetime import datetime
 import uuid
@@ -30,7 +29,6 @@ class SimulatedScreenerSerial(object):
         self.test_order = []
         self.file_uuid = str(uuid.uuid4())
 
-
     @staticmethod
     def determine_material_value(material, true_results):
         """
@@ -42,7 +40,6 @@ class SimulatedScreenerSerial(object):
         """
         determined_value = true_results[material, 0]  # 0 because column vector indexing
         return determined_value
-
 
     def initial_random_samples(self, num_initial_samples):
         """
@@ -61,7 +58,6 @@ class SimulatedScreenerSerial(object):
             self.n_tested += 1
             self.test_order.append(material_index)
 
-
     def user_updates(self, display=True):
         """
         Provides user updates on the status of the AMI screening. The current AMI iteration is provided along with the
@@ -74,7 +70,6 @@ class SimulatedScreenerSerial(object):
         if display:
             print(F'AMI Iteration {self.n_tested}')
             print(F'{len(self.top_100_found)} out of 100 top materials found')
-
 
     def simulation_output(self):
         """
@@ -95,7 +90,6 @@ class SimulatedScreenerSerial(object):
         output_name = F'ami_output_{self.file_uuid}.mat'
         savemat(output_name, screen_output)
 
-
     def perform_screening(self, model, verbose=True):
         """
         Performs the simulated screening on the loaded dataset using the passed model. For each iteration of the model:
@@ -110,7 +104,6 @@ class SimulatedScreenerSerial(object):
         :return: N/A, updates internal parameters
         """
         while self.n_tested < self.max_iterations:
-
             model.fit(self.data_params.y_experimental, self.data_params.status)
             ipick = model.pick_next(self.data_params.status)  # sample next point
             self.data_params.status[ipick, 0] = 1  # show that we are testing ipick
@@ -128,19 +121,35 @@ class SimulatedScreenerSerial(object):
 ########################################################################################################################
 
 class SimulatedScreenerParallel(object):
+    """Class which uses an AMI model to perform a parallel simulated screening of materials from a dataset
+    containing all features and target values for the entries.
+    The simulated screener takes a `data_params` object containing attributes calculated from the initial data
+    used for the simulation. It's values are "composed" out of the object for use here
+    """
 
     def __init__(self, data_params, test_cost, sim_budget, nthreads, num_init, min_samples):
-        self.data_params = data_params  # obj, contains triaged data including `y_true`, `y_experimental` and `status`
-        self.test_cost = test_cost  # float, cost incurred when `assessing` a candidate
-        self.sim_budget = sim_budget  # float, total amount of resources which can be used for the screening
-        self.nthreads = nthreads  # int, number of threads to work on
-        self.history = []  # lists to store simulation history
-        self.workers = [None] * self.nthreads  # now follow controller, set up initial jobs separately
-        self.finish_time = np.zeros(self.nthreads)  # times the workers will finish at, here is all zero
-        self.num_init = num_init  # int, number of initial random samples to take
-        self.queued = None
-        self.min_samples = min_samples 
-        self.model_fitted=False
+        """
+        :param data_params: DataTriage obj, contains triaged data including `y_true`, `y_experimental` and `status`
+        :param test_cost: float, cost incurred when `assessing` a candidate
+        :param sim_budget: float, total amount of resources which can be used for the screening
+        :param nthreads: int, number of threads to work on
+        :param num_init: int, number of initial random samples to take
+        :param min_samples: int, number of materials to be assessed before AMI model can fit
+        """
+        self.data_params = data_params
+        self.test_cost = test_cost
+        self.sim_budget = sim_budget
+        self.nthreads = nthreads
+        self.num_init = num_init
+        self.min_samples = min_samples
+
+        assert self.num_init > self.nthreads, F'number of initial samples {self.num_init} < num threads {self.nthreads}'
+
+        self.workers = [None] * self.nthreads
+        self.finish_time = np.zeros(self.nthreads)
+        self.queued = np.random.choice(self.data_params.n, self.num_init, replace=False)  # random material indices
+        self.history = []
+        self.model_fitted = False
 
     @staticmethod
     def determine_material_value(material, true_results):
@@ -164,11 +173,10 @@ class SimulatedScreenerParallel(object):
         allowing different keys to be passed depending on time of experiment.
         :param kwargs: dict, contains useful information about the simulated screening
         """
-        print(kwargs)
         self.history.append(kwargs)
 
 
-    def _run_experiment(self, i, ipick):
+    def _run_experiment(self, i, ipick, exp_note):
         """
         Passed model selects a material to sample.
         If the material has not been tested before then a cheap test is run, otherwise run expensive.
@@ -184,7 +192,7 @@ class SimulatedScreenerParallel(object):
         self.data_params.status[ipick] = 1  # update status
         self.finish_time[i] += experiment_length
 
-        self._log_history(note='start', worker=i, candidate=ipick, time=start, exp_len=experiment_length)
+        self._log_history(note=exp_note, worker=i, candidate=ipick, time=start, exp_len=experiment_length)
 
 
     def _record_experiment(self, final):
@@ -217,31 +225,26 @@ class SimulatedScreenerParallel(object):
     def _fit_if_safe(self, model):
         """
         If enough materials have been assessed as per user threshold, then allow the model to fit on the data
-        obtained. If not enough then could potentially cause the model to crash on fitting.
+        obtained. If not enough then could potentially cause the model to crash on fitting which ruins the experiment.
         :param model: AMI model
         """
-        if len(np.where(self.data_params.status == 2)[0]) >= self.min_samples:
+        complete_experiment = 2
+        if sum(self.data_params.status == complete_experiment) >= self.min_samples:
             model.fit(self.data_params.y_experimental, self.data_params.status)
-            self.model_fitted=True
+            self.model_fitted = True
 
 
-    def _initial_materials(self, model):
+    def _initial_materials(self):
         """
-        To avoid waiting for all the initial materials to be finished (i.e. serialising the parallel process), the
-        initial random materials are queued and are iterated through first while allowing the model to sample when they
-        run out.
-        If there is enough experimental values, then the model can also fit itself after the initial allocation
-        :param model: The AMI object performing the screening of the materials being investigated
+        Assigns each of the available workers/threads a random material from the initial queue.
+        The worker then runs the material, and the queue is updated accordingly to remove the material.
+        The queue is updated to ensure the same material isn't allocated multiple times.
         """
-        
-        if self.num_init<self.nthreads:
-            print('hey jack ass run more initial random experiments')
-        
-        self.queued = np.random.choice(self.data_params.n, self.num_init, replace=False)  # choose material indexes
-        for i in range(self.nthreads):  # first give each worker a job to do
-            ipick=self.queued[0]
+
+        for i in range(self.nthreads):
+            ipick = self.queued[0]
             self.queued = np.delete(self.queued, 0)
-            self._run_experiment(i, ipick)
+            self._run_experiment(i, ipick, 'start initial sample')
 
 
     def perform_screening(self, model):
@@ -252,27 +255,27 @@ class SimulatedScreenerParallel(object):
         This proceeds until the budget is spent (all the while recording the history of the work).
         After the budget is spent s.t. no expensive tests can be run, the remaining jobs finish.
         :param model: The AMI object performing the screening of the materials being investigated
-        :param min_samples: int, minimum number of materials to be fully assessed before allowing model to fit
         :return: self.history: list, full accounting of what materials were sampled when and where
         """
-        self._initial_materials(model)
+        self._initial_materials()
 
         while self.sim_budget >= self.test_cost:  # spend budget till cant afford any more expensive tests
-            
+
             i = self._record_experiment(final=False)
 
             if len(self.queued) > 0:  # if queued materials then sample, else let model sample
                 ipick = self.queued[0]
+                note = 'start initial sample'
                 self.queued = np.delete(self.queued, 0)
             else:
                 self._fit_if_safe(model)
                 if self.model_fitted:
-                    print('ami sample')
                     ipick = model.pick_next(self.data_params.status)  # fit model and then allow to pick
+                    note = 'start ami sample'
                 else:
-                    print('random sample')
-                    ipick=np.random.choice([i for i in range(self.data_params.n) if self.data_params.status[i]==0])
-            self._run_experiment(i, ipick)
+                    ipick = np.random.choice([i for i in range(self.data_params.n) if self.data_params.status[i] == 0])
+                    note = 'start ami rand sample'
+            self._run_experiment(i, ipick, exp_note=note)
 
         for i in range(self.nthreads):  # finish up any remaining jobs and record their results
             self._record_experiment(final=True)

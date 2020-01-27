@@ -57,7 +57,6 @@ class prospector(object):
         self.y_max = np.max(ytested)
         # each 10 fits we update the hyperparameters, otherwise we just update the data which is a lot faster
         if np.mod(self.update_counter, self.updates_per_big_fit) == 0:
-
             print('fitting hyperparameters')
             # how many training points are there
             ntested = len(tested)
@@ -76,7 +75,7 @@ class prospector(object):
             else:
                 train = tested
                 ytrain = ytested
-
+    
             # use GPy code to fit hyperparameters to minimize NLL on train data
             mfy = GPy.mappings.Constant(input_dim=self.d, output_dim=1)  # fit dense GPy model to this data
             ky = GPy.kern.RBF(self.d, ARD=True, lengthscale=np.ones(self.d))

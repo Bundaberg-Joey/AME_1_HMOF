@@ -143,7 +143,7 @@ class SimulatedScreenerParallel(object):
         self.sim_budget = sim_budget  # float, total amount of resources which can be used for the screening
         self.nthreads = nthreads  # int, number of threads to work on
         self.history = []  # lists to store simulation history
-        self.workers = [(0, 0)] * self.nthreads  # now follow controller, set up initial jobs separately
+        self.workers = [None] * self.nthreads  # now follow controller, set up initial jobs separately
         self.finish_time = np.zeros(self.nthreads)  # times the workers will finish at, here is all zero
 
 
@@ -192,7 +192,7 @@ class SimulatedScreenerParallel(object):
         :param i: int, index of the worker to perform the task
         :param ipick: int, index of the material to be assessed
         """
-        self.workers[i] = (ipick, 'y')
+        self.workers[i] = ipick
         self.sim_budget -= self.test_cost
 
         experiment_length = np.random.uniform(self.test_cost, self.test_cost * 2)
@@ -213,7 +213,7 @@ class SimulatedScreenerParallel(object):
         :return: i: int, the index of the worker which is going to finish first
         """
         i = np.argmin(self.finish_time)  # get the worker which is closest to finishing
-        idone = self.workers[i][0]
+        idone = self.workers[i]
 
         experimental_value = self.determine_material_value(idone, self.data_params.y_true)
         self.data_params.y_experimental[idone] = experimental_value

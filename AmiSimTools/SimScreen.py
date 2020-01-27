@@ -137,7 +137,7 @@ class SimulatedScreenerSerial(object):
 
 class SimulatedScreenerParallel(object):
 
-    def __init__(self, data_params, test_cost, sim_budget, nthreads):
+    def __init__(self, data_params, test_cost, sim_budget, nthreads, num_init):
         self.data_params = data_params  # obj, contains triaged data including `y_true`, `y_experimental` and `status`
         self.test_cost = test_cost  # float, cost incurred when `assessing` a candidate
         self.sim_budget = sim_budget  # float, total amount of resources which can be used for the screening
@@ -145,6 +145,9 @@ class SimulatedScreenerParallel(object):
         self.history = []  # lists to store simulation history
         self.workers = [None] * self.nthreads  # now follow controller, set up initial jobs separately
         self.finish_time = np.zeros(self.nthreads)  # times the workers will finish at, here is all zero
+        self.num_init = None  # int, number of initial random samples to take
+        self.queued = None
+        self.min_samples = None
 
 
     @staticmethod
@@ -172,16 +175,6 @@ class SimulatedScreenerParallel(object):
         :param kwargs: dict, contains useful information about the simulated screening
         """
         self.history.append(kwargs)
-
-
-    def _initial_random_sample(self):
-        """
-        starts by selecting a material and performing cheap and expensive test on it
-        """
-        candidate = 0
-        self.sim_budget -= self.test_cost  # update budget
-        self.data_params.y_experimental[candidate] = self.determine_material_value(candidate, self.data_params.y_true)
-        self.data_params.status[candidate] = 2  # update status
 
 
     def _run_experiment(self, i, ipick):
@@ -229,7 +222,38 @@ class SimulatedScreenerParallel(object):
             return i
 
 
-    def perform_screening(self, model):
+    def _fit_if_safe(self, model):
+        """
+        If enough materials have been assessed as per user threshold, then allow the model to fit on the data
+        obtained. If not enough then could potentially cause the model to crash on fitting.
+
+        :param model: AMI model
+        """
+        if len(np.where(self.data_params.status == 2)[0]) >= self.min_samples:
+            model.fit(self.data_params.y_experimental, self.data_params.status)
+
+
+    def _initial_materials(self, model):
+        """
+        To avoid waiting for all the initial materials to be finished (i.e. serialising the parallel process), the
+        initial random materials are queued and are iterated through first while allowing the model to sample when they
+        run out.
+        If there is enough experimental values, then the model can also fit itself after the initial allocation
+        :param model: The AMI object performing the screening of the materials being investigated
+        """
+        self.queued = np.random.choice(self.data_params.n, self.num_init, replace=False)  # choose material indexes
+
+        for i in range(self.nthreads):  # first give each worker a job to do
+            try:
+                ipick = self.queued[i]
+                self.queued = np.delete(self.queued, 0)
+            except IndexError:
+                self._fit_if_safe(model)
+                ipick = model.pick_next(self.data_params.status)  # if index error then none queued so model picks
+            self._run_experiment(i, ipick)
+
+
+    def perform_screening(self, model, min_samples):
         """
         Performs the full automated screening with multiple workers.
         First each worker (determined by the number of threads) is assigned a material to investigate.
@@ -237,17 +261,21 @@ class SimulatedScreenerParallel(object):
         This proceeds until the budget is spent (all the while recording the history of the work).
         After the budget is spent s.t. no expensive tests can be run, the remaining jobs finish.
         :param model: The AMI object performing the screening of the materials being investigated
+        :param min_samples: int, minimum number of materials to be fully assessed before allowing model to fit
         :return: self.history: list, full accounting of what materials were sampled when and where
         """
-        self._initial_random_sample()  # initialise the model with a single expensive test
-
-        for i in range(self.nthreads):  # at the start, give the workers a job to do each
-            ipick = model.pick_next(self.data_params.status)
-            self._run_experiment(i, ipick)
+        self.min_samples = min_samples
+        self._initial_materials(model)
 
         while self.sim_budget >= self.test_cost:  # spend budget till cant afford any more expensive tests
             i = self._record_experiment(final=False)
-            ipick = model.pick_next(self.data_params.status)
+
+            if len(self.queued) > 0:  # if queued materials then sample, else let model sample
+                ipick = self.queued[0]
+                self.queued = np.delete(self.queued, 0)
+            else:
+                self._fit_if_safe(model)
+                ipick = model.pick_next(self.data_params.status)  # fit model and then allow to pick
             self._run_experiment(i, ipick)
 
         for i in range(self.nthreads):  # finish up any remaining jobs and record their results
@@ -256,6 +284,4 @@ class SimulatedScreenerParallel(object):
         return self.history
 
 
-# TODO: update SimulatedScreenerParallel to work with `AME_1`
-# TODO: Figure out where `model.fit()` goes in the main loop
-# TODO: Update random sampling at initialisation to be more AME 1 like
+# TODO: TEST THE FLIPPING THING !!!

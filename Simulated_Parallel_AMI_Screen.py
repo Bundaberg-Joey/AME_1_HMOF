@@ -22,6 +22,8 @@ def save_data(df, meta):
 
     """
     file_id = str(uuid4())
+    meta['file_id'] = file_id
+
     df.to_csv(F'{file_id}.csv', index=False)
     with open(F'{file_id}.json', 'w') as f:
         f.write(json.dumps(meta, indent=4))

@@ -185,14 +185,14 @@ class SimulatedScreenerParallel(object):
         :param ipick: int, index of the material to be assessed
         """
         self.workers[i] = ipick
-        self.sim_budget -= self.test_cost
+        experiment_cost = np.random.uniform(self.test_cost, self.test_cost * 2)
+        self.sim_budget -= experiment_cost
 
-        experiment_length = np.random.uniform(self.test_cost, self.test_cost * 2)
         start = self.finish_time[i]
         self.data_params.status[ipick] = 1  # update status
-        self.finish_time[i] += experiment_length
+        self.finish_time[i] += experiment_cost
 
-        self._log_history(note=exp_note, worker=i, candidate=ipick, time=start, exp_len=experiment_length)
+        self._log_history(note=exp_note, worker=i, candidate=ipick, time=start, exp_len=experiment_cost)
 
 
     def _record_experiment(self, final):

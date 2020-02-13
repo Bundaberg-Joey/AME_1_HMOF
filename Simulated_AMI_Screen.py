@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-import argparse
 import json
 from uuid import uuid4
+import os
 
 import numpy as np
 import pandas as pd
@@ -30,44 +30,39 @@ def save_data(data):
     :param data: dict
     """
     file_id = str(uuid4())
-    with open(F'{file_id}.json', 'w') as f:
+    with open(F'json_output/{file_id}.json', 'w') as f:
         f.write(json.dumps(data, indent=4))
 
 
+num_repetitions = 10
+csv_files = [i for i in os.listdir('..') if '.csv' in i]
 
-if __name__ == '__main__':
+for data_file in csv_files:
+    for rep in range(num_repetitions):
 
-    data_location = r'C:\Users\crh53\OneDrive\Desktop\PHD_Experiments\E2_AMI_James\Data\Scaled_HMOF_Data.csv'
+        sim_data = DataTriageCSV.load_from_path(data_file)  # load data and format
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--data_file', action='store', default=data_location, help='path to data file')
-    parser.add_argument('-i', '--initial_samples', action='store', type=int, default=500, help='# of random samples AMI takes')
-    parser.add_argument('-a', '--acquisition', action='store', type=str, default='Thompson', help='AMI acquisition func')
-    args = parser.parse_args()
+        sim_screen = SimulatedScreenerSerial(data_params=sim_data, max_iterations=501, sim_code='N/A')
+        ami = BOGP.prospector(X=sim_data.X, acquisition_function='Thompson')
+        # initialises the AMI model and the simulation screener with the triaged data
+    
+        sim_screen.initial_random_samples(num_initial_samples=500)  # sample 500 materials and then do killswitch
+        z_mu, z_var = sim_screen.perform_screening(model=ami)
 
-    sim_data = DataTriageCSV.load_from_path(args.data_file)
-    # loads data from csv file and then determines `status` array and other parameters as dict needed for the screening
-
-    sim_screen = SimulatedScreenerSerial(data_params=sim_data, max_iterations=501, sim_code='N/A')
-    ami = BOGP.prospector(X=sim_data.X, acquisition_function=args.acquisition)
-    # initialises the AMI model and the simulation screener with the triaged data
-
-    sim_screen.initial_random_samples(num_initial_samples=args.initial_samples)
-    z_mu, z_var = sim_screen.perform_screening(model=ami)
-    ame_score = prediction_score(sim_data.y, z_mu)  # calc score needed for test
-
-    columns = pd.read_csv(args.data_file).columns
-    features, target = list(columns[:-1]), str(columns[-1])
-
-    material, feat_code, bad_target = args.data_file.split('_')
-
-    results_dict = {'features': features,
-                    'target': target,
-                    'ami_score': ame_score,
-                    'data_set': args.data_file,
-                    'feature_code': feat_code,
-                    'material': material}
-
-    save_data(results_dict)
+        ame_score = prediction_score(sim_data.y, z_mu)  # calc score needed for test
+    
+        columns = pd.read_csv(data_file).columns
+        features, target = list(columns[:-1]), str(columns[-1])
+    
+        material, feat_code, bad_target = data_file.split('_')
+    
+        results_dict = {'features': features,
+                        'target': target,
+                        'ami_score': ame_score,
+                        'data_set': data_file,
+                        'feature_code': feat_code,
+                        'material': material}
+    
+        save_data(results_dict)
 
 

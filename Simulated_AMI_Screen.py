@@ -2,7 +2,7 @@
 
 import json
 from uuid import uuid4
-import os
+import argparse
 
 import numpy as np
 import pandas as pd
@@ -34,35 +34,33 @@ def save_data(data):
         f.write(json.dumps(data, indent=4))
 
 
-num_repetitions = 10
-csv_files = [i for i in os.listdir('..') if '.csv' in i]
+if __name__ == '__main__':
 
-for data_file in csv_files:
-    for rep in range(num_repetitions):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-d', '--data_file', action='store', default='', help='path to data file')
+    args = parser.parse_args()
 
-        sim_data = DataTriageCSV.load_from_path(data_file)  # load data and format
+    sim_data = DataTriageCSV.load_from_path(args.data_file)  # load data and format
 
-        sim_screen = SimulatedScreenerSerial(data_params=sim_data, max_iterations=501, sim_code='N/A')
-        ami = BOGP.prospector(X=sim_data.X, acquisition_function='Thompson')
-        # initialises the AMI model and the simulation screener with the triaged data
-    
-        sim_screen.initial_random_samples(num_initial_samples=500)  # sample 500 materials and then do killswitch
-        z_mu, z_var = sim_screen.perform_screening(model=ami)
+    sim_screen = SimulatedScreenerSerial(data_params=sim_data, max_iterations=501, sim_code='N/A')
+    ami = BOGP.prospector(X=sim_data.X, acquisition_function='Thompson')
+    # initialises the AMI model and the simulation screener with the triaged data
 
-        ame_score = prediction_score(sim_data.y, z_mu)  # calc score needed for test
-    
-        columns = pd.read_csv(data_file).columns
-        features, target = list(columns[:-1]), str(columns[-1])
-    
-        material, feat_code, bad_target = data_file.split('_')
-    
-        results_dict = {'features': features,
-                        'target': target,
-                        'ami_score': ame_score,
-                        'data_set': data_file,
-                        'feature_code': feat_code,
-                        'material': material}
-    
-        save_data(results_dict)
+    sim_screen.initial_random_samples(num_initial_samples=500)  # sample 500 materials and then do killswitch
+    z_mu, z_var = sim_screen.perform_screening(model=ami)
 
+    ame_score = prediction_score(sim_data.y, z_mu)  # calc score needed for test
 
+    columns = pd.read_csv(args.data_file).columns
+    features, target = list(columns[:-1]), str(columns[-1])
+
+    material, feat_code, bad_target = args.data_file.split('_')
+
+    results_dict = {'features': features,
+                    'target': target,
+                    'ami_score': ame_score,
+                    'data_set': args.data_file,
+                    'feature_code': feat_code,
+                    'material': material}
+
+    save_data(results_dict)

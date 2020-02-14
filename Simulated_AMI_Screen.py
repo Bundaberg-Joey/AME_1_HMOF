@@ -47,7 +47,7 @@ if __name__ == '__main__':
     # initialises the AMI model and the simulation screener with the triaged data
 
     sim_screen.initial_random_samples(num_initial_samples=500)  # sample 500 materials and then do killswitch
-    z_mu, z_var = sim_screen.perform_screening(model=ami)
+    z_mu, z_var = sim_screen.perform_killswitch_screen(model=ami)
 
     ame_score = prediction_score(sim_data.y, z_mu)  # calc score needed for test
 

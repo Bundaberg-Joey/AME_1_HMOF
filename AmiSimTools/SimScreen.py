@@ -58,8 +58,39 @@ class SimulatedScreenerSerial(object):
             self.n_tested += 1
             self.test_order.append(material_index)
 
+    def user_updates(self, display=True):
+        """
+        Provides user updates on the status of the AMI screening. The current AMI iteration is provided along with the
+        number of top 100 performing materials (determined from loaded dataset) also.
+        :param display: Boolean, states if the output should be written to the screen or not during screening
+        """
+        checked_materials = np.where(self.data_params.status[:, 0] == 2)[0]
+        top_100 = self.data_params.top_100
+        self.top_100_found = [i for i in range(self.data_params.n) if i in top_100 and i in checked_materials]
+        if display:
+            print(F'AMI Iteration {self.n_tested}')
+            print(F'{len(self.top_100_found)} out of 100 top materials found')
 
-    def perform_screening(self, model):
+    def simulation_output(self):
+        """
+        Saves the status of the simulator object and chosen attributes of the data object.
+        Currently saved to MatLab file for convenience but ideally will step up to hdf5 in future
+        :return: N/a file output
+        """
+        screen_output = {
+            'sim_code': self.sim_code,
+            'max_iterations': self.max_iterations,
+            'n_tested': self.n_tested,
+            'test_order': self.test_order,
+            'top_100_found': self.top_100_found,
+            'sim_start': self.sim_start,
+            'file_uuid': self.file_uuid
+        }
+
+        output_name = F'ami_output_{self.file_uuid}.mat'
+        savemat(output_name, screen_output)
+
+    def perform_screening(self, model, verbose=True):
         """
         Performs the simulated screening on the loaded dataset using the passed model. For each iteration of the model:
         1) The model fits itself to target values it has learned through running experiments of selected materials
@@ -72,11 +103,30 @@ class SimulatedScreenerSerial(object):
         :param verbose: Boolean, True sets the screener to provide user updates, False to silence them
         :return: N/A, updates internal parameters
         """
+        while self.n_tested < self.max_iterations:
+            model.fit(self.data_params.y_experimental, self.data_params.status)
+            ipick = model.pick_next(self.data_params.status)  # sample next point
+            self.data_params.status[ipick, 0] = 1  # show that we are testing ipick
+            """ this next line is the 'experiment happening' """
+            material_value = self.determine_material_value(ipick, self.data_params.y_true)
+            self.data_params.y_experimental[ipick, 0] = material_value
+            self.data_params.status[ipick, 0] = 2
+            self.n_tested += 1  # count sample and print out current score
+            self.test_order.append(ipick)  # update the order of materials sampled
 
+            self.user_updates(display=verbose)
+            self.simulation_output()
+
+    def perform_killswitch_screen(self, model):
+        """
+        Used when we want to asses AMI prediction after selecting an initial number of samples.
+        Model is immediately fitted to the gathered (random) data and a prediction is then made
+        :param model: The AMI object performing the screening of the materials being investigated
+        :return: (z_mu, z_var), (np.array(n), np.array(n)) predicted mean and variance of the ami
+        """
         model.fit(self.data_params.y_experimental, self.data_params.status)
         z_mu, z_var = model.predict()
         return z_mu, z_var
-
 
 
 ########################################################################################################################

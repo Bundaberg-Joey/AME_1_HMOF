@@ -3,4 +3,5 @@ GPy
 numpy
 scikit-learn
 scipy
+matplotlib
 

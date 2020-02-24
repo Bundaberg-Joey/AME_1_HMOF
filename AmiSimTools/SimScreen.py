@@ -117,6 +117,17 @@ class SimulatedScreenerSerial(object):
             self.user_updates(display=verbose)
             self.simulation_output()
 
+    def perform_killswitch_screen(self, model):
+        """
+        Used when we want to asses AMI prediction after selecting an initial number of samples.
+        Model is immediately fitted to the gathered (random) data and a prediction is then made
+        :param model: The AMI object performing the screening of the materials being investigated
+        :return: (z_mu, z_var), (np.array(n), np.array(n)) predicted mean and variance of the ami
+        """
+        model.fit(self.data_params.y_experimental, self.data_params.status)
+        z_mu, z_var = model.predict()
+        return z_mu, z_var
+
 
 ########################################################################################################################
 

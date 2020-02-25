@@ -28,7 +28,7 @@ def tree_selector(tree_dict, note):
 ########################################################################################################################
 
 
-file_path = 'Data/COF_pc_deliverablecapacityvSTPv.csv'
+file_path = 'Data/COF_pc_DC_norm.csv'
 material, api = 'COF', 'dc'
 max_iterations = 1000
 num_initial_samples = 100

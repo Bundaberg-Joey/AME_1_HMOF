@@ -28,27 +28,29 @@ def tree_selector(tree_dict, note):
 ########################################################################################################################
 
 
-file_path = 'Data/COF_pc_DC_norm.csv'
+norm_path, human_path = 'Data/COF_pc_DC_norm.csv', 'Data/COF_pc_DC_Human.csv'
 material, api = 'COF', 'dc'
 max_iterations = 1000
 num_initial_samples = 100
 n_for_top = 500
 
 
-
 print('Getting Subsample')  # get subsample
-df = pd.read_csv(file_path)
-X, y = df.iloc[:, :-1], df.iloc[:, -1]
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-X_tr_arr, X_ts_arr, y_tr_arr, y_ts_arr = np.array(X_train), np.array(X_test), np.array(y_train), np.array(y_test)
-n_train = len(X_tr_arr)
+df_norm = np.loadtxt(norm_path, dtype='float', delimiter=',', skiprows=1)
+df_human = np.loadtxt(human_path, dtype='float', delimiter=',', skiprows=1)
+assert df_human.shape == df_norm.shape, 'dataframes not the same shapes did you accidently run a MOF and a COF ?'
+feature_names = pd.read_csv(norm_path).columns[:-1]
+X_norm, y_norm, X_human, y_human = df_norm[:, :-1], df_norm[:, -1], df_human[:, :-1], df_human[:, -1]
 
+rand_state = np.random.randint(0, 100000)  # same random state therefore the splitting will be the same
+X_train_n, X_test_n, y_train_n, y_test_n = train_test_split(X_norm, y_norm, test_size=0.2, random_state=rand_state)
+X_train_h, X_test_h, y_train_h, y_test_h = train_test_split(X_human, y_human, test_size=0.2, random_state=rand_state)
+n_train = len(X_train_h)
 
 
 print('Running Subsample')  # Run Subsample
-
-sim_data = DataTriage(X=X_tr_arr, y=y_tr_arr)
-sim_screen = SimulatedScreenerSerial(data_params=sim_data, max_iterations=max_iterations, sim_code=file_path)
+sim_data = DataTriage(X=X_train_n, y=y_train_n)
+sim_screen = SimulatedScreenerSerial(data_params=sim_data, max_iterations=max_iterations, sim_code=material)
 ami = BOGP.prospector(X=sim_data.X, acquisition_function='Thompson')
 sim_screen.initial_random_samples(num_initial_samples=num_initial_samples)
 
@@ -59,10 +61,10 @@ ame_tested = np.where(sim_screen.data_params.status == 2)[0]  # 2 indicate mater
 
 
 print('Making Figures From materials')  # Make figure mof
-tau = np.sort(y)[-n_for_top]  # threshold value for top nth material
+tau = np.sort(y_norm)[-n_for_top]  # threshold value for top nth material
 prob_is_top = 1 - norm.cdf(np.divide(tau-posterior_mean, posterior_var**0.5))  # mean and var from training data
-is_top_train, is_top_test, is_top_tested = (y_tr_arr >= tau), (y_ts_arr >= tau), (y_tr_arr[ame_tested] >= tau)
-ame_trees = make_AME_trees.prob_tree(X_tr_arr, prob_is_top, ame_tested, is_top_tested, X_ts_arr, is_top_test)
+is_top_train, is_top_test, is_top_tested = (y_train_n >= tau), (y_test_n >= tau), (y_train_n[ame_tested] >= tau)
+ame_trees = make_AME_trees.prob_tree(X_train_h, prob_is_top, ame_tested, is_top_tested, X_test_h, is_top_test)
 
 brute_force_trees = []
 training_sizes = [1, 0.25, 0.1, 0.05, 0.01]
@@ -71,7 +73,7 @@ for k in training_sizes:
     print(F'Brute force trees with training size {k}')
     sample_size = int(n_train * k)
     sampled = np.random.choice(n_train, sample_size, replace=False)
-    _tree = make_AME_trees.brute_tree(X_tr_arr[sampled], is_top_train[sampled], X_ts_arr, is_top_test)
+    _tree = make_AME_trees.brute_tree(X_train_h[sampled], is_top_train[sampled], X_test_h, is_top_test)
     brute_force_trees.append(_tree)
     print(F'Training size {k} finished')
 
@@ -174,7 +176,7 @@ for dump in tree_dumps:
 
     selected_models = tree_selector(tree_dumps[dump], dump)  # select trees with lowest c0 score, c1 score and ouput dot
     for _model in selected_models:
-        export_graphviz(selected_models[_model], feature_names=X.columns, filled=True, rounded=True,
+        export_graphviz(selected_models[_model], feature_names=feature_names, filled=True, rounded=True,
                         out_file=F'output/{material}_{api}_{_model}_.dot')
 
 print('SELECT THE BEST TREE WITH COST0 & COST1 TRADEOFF FOR BF AND AME')

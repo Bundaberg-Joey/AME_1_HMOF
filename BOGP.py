@@ -51,7 +51,7 @@ class Prospector(object):
 
     `None` initialised attributes
     -----------------------------
-    y_max : None (initialises as `None` type but is later updated to numeric `float` or `int`)
+    y_max : float
         The maximum obtained target value.
 
     GP : GPy.models.gp_regression.GPRegression

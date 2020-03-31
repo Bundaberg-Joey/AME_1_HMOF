@@ -10,7 +10,8 @@ from AmiSimTools.SimScreen import SimulatedScreenerSerial
 
 if __name__ == '__main__':
 
-    data_location = r'C:\Users\crh53\OneDrive\Desktop\PHD_Experiments\E2_AMI_James\Data\Scaled_HMOF_Data.csv'
+    data_location = r'C:\Users\local-user\OneDrive\Desktop\PHD_Experiments\E3_AMI_finalisation\Data\E3_2\csvfiles' \
+                    r'\COF_pct_deliverablecapacityvSTPv.csv '
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--data_file', action='store', default=data_location, help='path to data file')

@@ -135,6 +135,19 @@ class Prospector(object):
         self.tau_update = 10
         self.acquisition_function=acquisition_function
         self.y_max = None
+        self.GP = None
+        self.mu = None
+        self.a = None
+        self.l = None
+        self.b = None
+        self.py = None
+        self.M = None
+        self.SIG_XM = None
+        self.SIG_MM = None
+        self.SIG_MM_pos = None
+        self.mu_M_pos = None
+        self.B = None
+        self.tau = None
 
     def fit(self, Y, STATUS, ntop=100, nrecent=100, nmax=400, ntopmu=100, ntopvar=100, nkmeans=300, nkeamnsdata=5000,
             lam=1e-6):

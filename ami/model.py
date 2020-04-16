@@ -86,9 +86,6 @@ class Prospector(object):
 
     samples(nsamples=10, N=100)
 
-    estimate_tau(nsamples=10, N=100)
-
-    predict(STATUS, N=100, nysamples=100)
 
     Notes
     -----

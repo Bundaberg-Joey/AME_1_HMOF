@@ -9,7 +9,6 @@ Special routines for sparse sampling from posterior.
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.metrics.pairwise import euclidean_distances
-from scipy.stats import norm
 
 import GPy
 
@@ -35,17 +34,6 @@ class Prospector(object):
     updates_per_big_fit : int (default = 0)
         The number of model iterations between sampling and fully fitting model hyperparameters.
         When the sample is made on a non `update_per_big_fit` iteration then model just fits to data.
-
-    estimate_tau_counter : int (default = 0)
-        Counter used to track the number of times the `Greedy_tau` routine has been used for sampling.
-
-    tau_update : int (default = 10)
-        The number of model iterations using the `Greedy_tau` subroutine between sampling and fully fitting
-        model hyperparameters.
-
-    acquisition_function : str (default = 'Thompson') {'Thompson', 'Greedy_N', 'Greedy_tau', 'EI'}
-        The sampling method to be used by the model when selecting new samples.
-        If no value is passed from the list of functions then the model will sample randomly.
 
 
     `None` initialised attributes
@@ -89,9 +77,6 @@ class Prospector(object):
     B : np.array()
         USed for fitting of model on sparse induction points with high dimensionality.
 
-    tau : float
-        The threshold target value for a data point to be considered in the top `N` points using `Greedy_tau` sampling.
-
     Methods
     -------
     fit(Y, STATUS, ntop=100, nrecent=100, nmax=400, ntopmu=100, ntopvar=100, nkmeans=300, nkeamnsdata=5000,
@@ -115,24 +100,17 @@ class Prospector(object):
     of the large covariance matrices used by sparse inference.
     """
 
-    def __init__(self, X, acquisition_function='Thompson'):
+    def __init__(self, X):
         """
         Parameters
         ----------
         X : np.array(), shape (num entries, num features)
             Feature matrix containing numerical values.
-
-        acquisition_function : str (default = 'Thompson') {'Thompson', 'Greedy_N', 'Greedy_tau', 'EI'}
-            The sampling method to be used by the model when selecting new samples.
-            If no value is passed from the list of functions then the model will sample randomly.
         """
         self.X = X
         self.n, self.d = X.shape
         self.update_counter = 0
         self.updates_per_big_fit = 10
-        self.estimate_tau_counter = 0  # delete
-        self.tau_update = 10
-        self.acquisition_function = acquisition_function
         self.y_max = None
         self.GP = None
         self.mu = None
@@ -146,7 +124,6 @@ class Prospector(object):
         self.SIG_MM_pos = None
         self.mu_M_pos = None
         self.B = None
-        self.tau = None
 
     def fit(self, Y, STATUS, ntop=100, nrecent=100, nmax=400, ntopmu=100, ntopvar=100, nkmeans=300, nkeamnsdata=5000,
             lam=1e-6):

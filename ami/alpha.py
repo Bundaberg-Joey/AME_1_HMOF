@@ -57,15 +57,14 @@ def greedy_n(posterior, n, incremement=1):
 
     Parameters
     ----------
-    posterior : np.array(), shape(num_dataset_entries, n)
+    posterior : np.array(), shape(num_dataset_entries, num_posterior_samples)
         Posterior sampling of the dataset for each entry.
         Each entry (row) has `n` associated values / draws from the posterior.
-        Dataset must have been sampled `n` times which can be achieved with `ami.samples(n)`
+        Dataset must have been sampled `b` times which can be achieved with `ami.samples(b)`
 
     n : int
         The number of data points which the greedy `n` algorithm is attempting to optimise for.
         i.e. if `n` = 100, calculates the number of times each data point appears in the top 100.
-        Note this would require a posterior array of shape(num_dataset_entries, 100)
 
     incremement: int (default = 1)
         The value to increase the data point's presence in the top `n` by if found present in top `n`.
@@ -77,8 +76,9 @@ def greedy_n(posterior, n, incremement=1):
         Array containing the counts for each datapoint that it appeard in the top `n` data points in the dataset.
         If a value is not present in the top `n` then it will have a default value of 0.
     """
-    alpha = np.zeros(len(posterior))
-    for j in range(n):
+    a, b = posterior.shape
+    alpha = np.zeros(a)
+    for j in range(b):
         alpha[np.argpartition(posterior[:, j], -n)[-n:]] += incremement
     return alpha
 

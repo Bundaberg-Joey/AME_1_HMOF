@@ -270,22 +270,22 @@ class Prospector(object):
             self.SIG_XM.T), 0)
         return mu_X_pos, var_X_pos
 
-    def samples(self, nsamples=1):
+    def sample_posterior(self, n_repeats=1):
         """
         Conducts a sparse sampling of the dataset by sampling on the calculated inducing points and then uses the
         conditional mean given sample values on the full dataset.
 
         Parameters
         ----------
-        nsamples : int (default = 1)
-            The number of samples to draw from the posterior distribution.
+        n_repeats : int (default = 1)
+            The number of times the full dataset is to be sampled.
 
         Returns
         -------
-        samples_X_pos : np.array()
+        samples_X_pos : np.array(), shape(num_dataset_entries, n_repeats)
             Matrix whose columns are independent samples of the posterior over the full dataset
         """
-        samples_M_pos = np.random.multivariate_normal(self.mu_M_pos, self.SIG_MM_pos, nsamples).T
+        samples_M_pos = np.random.multivariate_normal(self.mu_M_pos, self.SIG_MM_pos, n_repeats).T
         samples_X_pos = self.mu + np.matmul(self.SIG_XM, np.linalg.solve(self.SIG_MM, samples_M_pos - self.mu))
         return samples_X_pos
 

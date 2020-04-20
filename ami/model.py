@@ -13,7 +13,9 @@ import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.metrics.pairwise import euclidean_distances
 
-import GPy
+from GPy.mappings import Constant
+from GPy.kern import RBF
+from GPy.models import GPRegression
 
 from ami import checks
 
@@ -72,9 +74,6 @@ class Prospector(object):
     -----------------------------
     y_max : float
         The maximum obtained target value.
-
-    GP : GPy.models.gp_regression.GPRegression
-        Gaussian Process Regressor (GPR) model from `GPy` which has been fit to the training data.
 
     mu : np.array()
         Prior mean as predicted by the the `GPy` GPR model.
@@ -160,7 +159,6 @@ class Prospector(object):
         self.nkeamnsdata = 5000
         self.lam = 1e-6
         self.y_max = None
-        self.GP = None
         self.mu = None
         self.a = None
         self.l = None
@@ -247,6 +245,34 @@ class Prospector(object):
 
         self.M = np.vstack((self.X[nystrom], np.multiply(kms.cluster_centers_, self.l)))
 
+    def _fit_hyperparameters(self, train, ytrain):
+        """Fits hyperparameters of the gaussian process regressor using external model.
+
+        The `GPy` library is used to fit the base model parameters {`self.mu`, `self.a`, `self.l`, `self.b`} which
+        minimises the NLL on the training data (points which have been tested and so have true values available).
+        The `GPy` library is yet unable to perform high(ish) dim sparse inference so the base model parameters are
+        extracted and used as internal attributes.
+
+        Parameters
+        ----------
+        train : list shape(num_points_tested, )
+            Indices of data points in the feature matrix `X` which have been tested, to balance inducing points.
+
+        ytrain : list shape(num_tested_points, )
+            List of target values which have been determined empirically by testing.
+
+        Returns
+        -------
+        None:
+            Updates attributes {`self.mu`, `self.a`, `self.l` `self.b`, `self.py`}
+        """
+        mfy = Constant(input_dim=self.d, output_dim=1)
+        ky = RBF(self.d, ARD=True, lengthscale=np.ones(self.d))
+        gpr = GPRegression(self.X[train], ytrain.reshape(-1, 1), kernel=ky, mean_function=mfy)
+        gpr.optimize('bfgs')
+        self.mu, self.a, self.l, self.b = gpr.flattened_parameters[:4]
+        self.py = gpr.predict(self.X)
+
     def fit(self, Y, tested, untested):
         """Fits model hyperparameter and inducing points using a GPy dense model to determine hyperparameters.
 
@@ -255,23 +281,11 @@ class Prospector(object):
         The subsample will contain the `nrecent', `ntopmu` points and (`nmax`-('nrecent'+'ntopmu')) random points not
         present in the `nrecent` or `ntopmu` points.
 
-        The `GPy` library is used to fit the base model parameters {`self.mu`, `self.a`, `self.l`, `self.b`} which
-        minimises the NLL on the training data (points which have been tested and so have true values available). The
-        `GPy` library is yet unable to perform high(ish) dim sparse inference so the base model parameters are extracted
-        and used as internal attributes.
-
-        In addition to the nystrom inducing points, `KMeansCLustering` with `nkmeans` clusters is used to get some
-        nontested inducing points spread throughout the domain.
-        As clustering can take a significant amount of time, a uniformly random subsample of `nkmeansdata` points from
-        the untested points is used here.
-        To ensure the model's length scales are factored into the clustering (euclidean distance) the coordinates are
-        scaled using the length scales `self.l` to ensure an appropriate distance measure is used.
-
         NOTE : Contact Dr Hook by email `james.l.hook@gmail.com` if serious issues develop during the fitting process,
 
         Parameters
         ----------
-        Y : np.array(), shape(num_entries,)
+        Y : np.array(), shape(num_entries, )
             True values of target points selected to be assessed.
 
         tested : list
@@ -289,7 +303,6 @@ class Prospector(object):
         self.y_max = np.max(ytested)
 
         if np.mod(self.update_counter, self.updates_per_big_fit) == 0:
-            print('fitting hyperparameters')
             ntested = len(tested)
 
             if ntested > self.nmax:
@@ -306,15 +319,8 @@ class Prospector(object):
                 train = tested
                 ytrain = ytested
 
-            mfy = GPy.mappings.Constant(input_dim=self.d, output_dim=1)
-            ky = GPy.kern.RBF(self.d, ARD=True, lengthscale=np.ones(self.d))
-            self.GP = GPy.models.GPRegression(self.X[train], ytrain.reshape(-1, 1), kernel=ky, mean_function=mfy)
-            self.GP.optimize('bfgs')
-            self.mu = self.GP.flattened_parameters[0]
-            self.a = self.GP.flattened_parameters[1]
-            self.l = self.GP.flattened_parameters[2]
-            self.b = self.GP.flattened_parameters[3]
-            self.py = self.GP.predict(self.X)
+            print('fitting hyperparameters')
+            self._fit_hyperparameters(train, ytrain)
 
             print('selecting inducing points')
             self._select_inducing_points(untested, train)

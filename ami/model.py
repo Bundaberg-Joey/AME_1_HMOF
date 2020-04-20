@@ -17,6 +17,7 @@ class Prospector(object):
     """
     Adaptive grid searching algorithm combining gaussian process regression (RBF kernel) and bayesian optimisation.
 
+
     Attributes
     ----------
     X : np.array(), shape (num entries, num features)
@@ -34,6 +35,32 @@ class Prospector(object):
     updates_per_big_fit : int (default = 0)
         The number of model iterations between sampling and fully fitting model hyperparameters.
         When the sample is made on a non `update_per_big_fit` iteration then model just fits to data.
+
+    ntop : int (default = 100)
+        The top n true points to consider when performing the fit on subset.
+
+    nrecent : int (default = 100)
+        The number of recent samples to consider when performing fit on subset.
+
+    nmax : int (default = 400)
+        The maximum number of random samples to be taken by the model when fitting.
+
+    ntopmu : int (default = 100)
+        The number of untested points which the model predicts to be the highest ranked.
+        Used to generate inducing points when fitting model.
+
+    ntopvar : int (default = 100)
+        The number of untested points which the model has the highest uncertainty values for.
+        Used to generate inducing points when fitting model.
+
+    nkmeans : int (default = 300)
+        Number of clusters to consider when using KMeansClustering when determining inducing points for fit.
+
+    nkeamnsdata : int (default = 5000)
+        Number of points fed into the KMeansCLustering algorithm for determining inducing points for fit.
+
+    lam : float (default = 1e-6)
+        Controls the jitter in samples when determining the covariance matrix `SIG_MM` when fitting.
 
 
     `None` initialised attributes
@@ -77,15 +104,12 @@ class Prospector(object):
     B : np.array()
         USed for fitting of model on sparse induction points with high dimensionality.
 
+
     Methods
     -------
-    fit(Y, STATUS, ntop=100, nrecent=100, nmax=400, ntopmu=100, ntopvar=100, nkmeans=300, nkeamnsdata=5000,
-            lam=1e-6)
-
+    fit(Y, STATUS)
     predict(nsamples=1)
-
     samples(nsamples=10, N=100)
-
 
     Notes
     -----
@@ -108,6 +132,14 @@ class Prospector(object):
         self.n, self.d = X.shape
         self.update_counter = 0
         self.updates_per_big_fit = 10
+        self.ntop = 100
+        self.nrecent = 100
+        self.nmax = 400
+        self.ntopmu = 100
+        self.ntopvar = 100
+        self.nkmeans = 300
+        self.nkeamnsdata = 5000
+        self.lam = 1e-6
         self.y_max = None
         self.GP = None
         self.mu = None
@@ -122,10 +154,8 @@ class Prospector(object):
         self.mu_M_pos = None
         self.B = None
 
-    def fit(self, Y, STATUS, ntop=100, nrecent=100, nmax=400, ntopmu=100, ntopvar=100, nkmeans=300, nkeamnsdata=5000,
-            lam=1e-6):
-        """
-        Fits model hyperparameter and inducing points using a GPy dense model to determine hyperparameters.
+    def fit(self, Y, STATUS):
+        """Fits model hyperparameter and inducing points using a GPy dense model to determine hyperparameters.
 
         Each time `fit` is run, the number of points assessed is calculated. If it is greater than `nmax` then to
         conserve computational power only a subsample of points are considered.
@@ -154,32 +184,6 @@ class Prospector(object):
         STATUS : np.array(), shape(num_entries,1)
             Vector which tracks which points have been assessed or not and to what degree.
 
-        ntop : int (default = 100)
-            The top n true points to consider when performing the fit on subset.
-
-        nrecent : int (default = 100)
-            The number of recent samples to consider when performing fit on subset.
-
-        nmax : int (default = 400)
-            The maximum number of random samples to be taken by the model .
-
-        ntopmu : int (default = 100)
-            The number of untested points which the model predicts to be the highest ranked.
-            Used to generate inducing points.
-
-        ntopvar : int (default = 100)
-            The number of untested points which the model has the highest uncertainty values for.
-            Used to generate inducing points.
-
-        nkmeans : int (default = 300)
-            Number of clusters to consider when using KMeansClustering when determining inducing points.
-
-        nkeamnsdata : int (default = 5000)
-            Number of points fed into the KMeansCLustering algorithm for determining inducing points.
-
-        lam : float (default = 1e-6)
-            Controls the jitter in samples when determining the covariance matrix `SIG_MM`
-
         Returns
         -------
         None :
@@ -195,12 +199,12 @@ class Prospector(object):
             print('fitting hyperparameters')
             ntested = len(tested)
 
-            if ntested > nmax:
-                top = list(np.argsort(ytested)[-ntop:])
-                recent = list(range(ntested - nrecent, ntested))
+            if ntested > self.nmax:
+                top = list(np.argsort(ytested)[-self.ntop:])
+                recent = list(range(ntested - self.nrecent, ntested))
                 topandrecent = list(set(top + recent))
                 rand = list(
-                    np.random.choice([i for i in range(ntested) if i not in topandrecent], nmax - len(topandrecent),
+                    np.random.choice([i for i in range(ntested) if i not in topandrecent], self.nmax - len(topandrecent),
                                      False))
                 testedtrain = topandrecent + rand
                 ytrain = ytested[testedtrain]
@@ -220,18 +224,18 @@ class Prospector(object):
 
             print('selecting inducing points')
             self.py = self.GP.predict(X)
-            topmu = [untested[i] for i in np.argsort(self.py[0][untested].reshape(-1))[-ntopmu:]]
-            topvar = [untested[i] for i in np.argsort(self.py[1][untested].reshape(-1))[-ntopvar:]]
+            topmu = [untested[i] for i in np.argsort(self.py[0][untested].reshape(-1))[-self.ntopmu:]]
+            topvar = [untested[i] for i in np.argsort(self.py[1][untested].reshape(-1))[-self.ntopvar:]]
             nystrom = topmu + topvar + train
-            kms = KMeans(n_clusters=nkmeans, max_iter=5).fit(
-                np.divide(X[list(np.random.choice(untested, nkeamnsdata))], self.l))
+            kms = KMeans(n_clusters=self.nkmeans, max_iter=5).fit(
+                np.divide(X[list(np.random.choice(untested, self.nkeamnsdata))], self.l))
             self.M = np.vstack((X[nystrom], np.multiply(kms.cluster_centers_, self.l)))
 
             print('fitting sparse model')
             DXM = euclidean_distances(np.divide(X, self.l), np.divide(self.M, self.l), squared=True)
             self.SIG_XM = self.a * np.exp(-DXM / 2)
             DMM = euclidean_distances(np.divide(self.M, self.l), np.divide(self.M, self.l), squared=True)
-            self.SIG_MM = self.a * np.exp(-DMM / 2) + np.identity(self.M.shape[0]) * lam * self.a
+            self.SIG_MM = self.a * np.exp(-DMM / 2) + np.identity(self.M.shape[0]) * self.lam * self.a
             self.B = self.a + self.b - np.sum(np.multiply(np.linalg.solve(self.SIG_MM, self.SIG_XM.T), self.SIG_XM.T),
                                               0)
             K = np.matmul(self.SIG_XM[tested].T, np.divide(self.SIG_XM[tested], self.B[tested].reshape(-1, 1)))
@@ -248,8 +252,7 @@ class Prospector(object):
         self.update_counter += 1
 
     def predict(self):
-        """
-        Calculates the predicted mean and predicted variance of the full dataset.
+        """Calculates the predicted mean and predicted variance of the full dataset.
         This utilises the covarince matrices of the prior `self.SIG_MM` and posterior `self.SIG_XM` distributions.
         For calculting the predicted mean of the posterior, a mean shifted process is used to facilite more reliable
         predictions of datapoints with process means != 0. Otherwise a mean of 0 would have to be assumed or the process
@@ -271,8 +274,7 @@ class Prospector(object):
         return mu_X_pos, var_X_pos
 
     def sample_posterior(self, n_repeats=1):
-        """
-        Conducts a sparse sampling of the dataset by sampling on the calculated inducing points and then uses the
+        """Conducts a sparse sampling of the dataset by sampling on the calculated inducing points and then uses the
         conditional mean given sample values on the full dataset.
 
         Parameters

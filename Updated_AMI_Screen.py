@@ -19,7 +19,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--data_file', action='store', default=data_location, help='path to data file')
     parser.add_argument('-i', '--initial_samples', action='store', type=int, default=50, help='# of random samples AMI takes')
     parser.add_argument('-m', '--max_iterations', action='store', type=int, default=120, help='# of materials AMI will sample')
-    parser.add_argument('-a', '--acquisition', action='store', type=str, default='thompson')
+    parser.add_argument('-a', '--acquisition', action='store', type=str, default='ei')
     args = parser.parse_args()
 
     n_tested, sample_method = args.initial_samples, args.acquisition
@@ -41,8 +41,8 @@ if __name__ == '__main__':
     while n_tested < args.max_iterations:
 
         tested, untested = status.tested(), status.untested()
-
-        ami.fit(y_exp[tested], tested=tested, untested=untested)
+        y_tested = y_exp[tested]
+        ami.fit(y_tested, tested=tested, untested=untested)
 
         # --> Thompson
         if sample_method == 'thompson':
@@ -58,7 +58,8 @@ if __name__ == '__main__':
         # --> EI
         elif sample_method == 'ei':
             mu_pred, var_pred = ami.predict()
-            a = alpha.expected_improvement(mu_pred, var_pred, ami.y_max)
+            y_max = np.max(y_tested)
+            a = alpha.expected_improvement(mu_pred, var_pred, y_max)
 
         # --> Greedy Tau
         elif sample_method == 'greedy_tau':

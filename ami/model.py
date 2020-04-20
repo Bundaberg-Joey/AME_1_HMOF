@@ -72,9 +72,6 @@ class Prospector(object):
 
     `None` initialised attributes
     -----------------------------
-    y_max : float
-        The maximum obtained target value.
-
     mu : np.array()
         Prior mean as predicted by the the `GPy` GPR model.
 
@@ -158,7 +155,6 @@ class Prospector(object):
         self.nkmeans = 300
         self.nkeamnsdata = 5000
         self.lam = 1e-6
-        self.y_max = None
         self.mu = None
         self.a = None
         self.l = None
@@ -299,8 +295,6 @@ class Prospector(object):
         None :
             Updates object attributes {`self.SIG_XM`, `self.SIG_MM`, `self.SIG_MM_pos`, `self.SIG_M_pos`}
         """
-        self.y_max = np.max(ytested)
-
         if np.mod(self.update_counter, self.updates_per_big_fit) == 0:
             ntested = len(tested)
 

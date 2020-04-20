@@ -208,7 +208,6 @@ class Prospector(object):
         None :
             Updates object attributes {`self.SIG_XM`, `self.SIG_MM`, `self.SIG_MM_pos`, `self.SIG_M_pos`}
         """
-        X = self.X
         ytested = Y[tested].reshape(-1)
         self.y_max = np.max(ytested)
 
@@ -232,7 +231,7 @@ class Prospector(object):
 
             mfy = GPy.mappings.Constant(input_dim=self.d, output_dim=1)
             ky = GPy.kern.RBF(self.d, ARD=True, lengthscale=np.ones(self.d))
-            self.GP = GPy.models.GPRegression(X[train], ytrain.reshape(-1, 1), kernel=ky, mean_function=mfy)
+            self.GP = GPy.models.GPRegression(self.X[train], ytrain.reshape(-1, 1), kernel=ky, mean_function=mfy)
             self.GP.optimize('bfgs')
             self.mu = self.GP.flattened_parameters[0]
             self.a = self.GP.flattened_parameters[1]
@@ -240,16 +239,16 @@ class Prospector(object):
             self.b = self.GP.flattened_parameters[3]
 
             print('selecting inducing points')
-            self.py = self.GP.predict(X)
+            self.py = self.GP.predict(self.X)
             topmu = [untested[i] for i in np.argsort(self.py[0][untested].reshape(-1))[-self.ntopmu:]]
             topvar = [untested[i] for i in np.argsort(self.py[1][untested].reshape(-1))[-self.ntopvar:]]
             nystrom = topmu + topvar + train
             kms = KMeans(n_clusters=self.nkmeans, max_iter=5).fit(
-                np.divide(X[list(np.random.choice(untested, self.nkeamnsdata))], self.l))
-            self.M = np.vstack((X[nystrom], np.multiply(kms.cluster_centers_, self.l)))
+                np.divide(self.X[list(np.random.choice(untested, self.nkeamnsdata))], self.l))
+            self.M = np.vstack((self.X[nystrom], np.multiply(kms.cluster_centers_, self.l)))
 
             print('fitting sparse model')
-            DXM = euclidean_distances(np.divide(X, self.l), np.divide(self.M, self.l), squared=True)
+            DXM = euclidean_distances(np.divide(self.X, self.l), np.divide(self.M, self.l), squared=True)
             self.SIG_XM = self.a * np.exp(-DXM / 2)
             DMM = euclidean_distances(np.divide(self.M, self.l), np.divide(self.M, self.l), squared=True)
             self.SIG_MM = self.a * np.exp(-DMM / 2) + np.identity(self.M.shape[0]) * self.lam * self.a
@@ -263,7 +262,7 @@ class Prospector(object):
         else:
             K = np.matmul(self.SIG_XM[tested].T, np.divide(self.SIG_XM[tested], self.B[tested].reshape(-1, 1)))
             self.SIG_MM_pos = self.SIG_MM - K + np.matmul(K, np.linalg.solve(K + self.SIG_MM, K))
-            J = np.matmul(self.SIG_XM[tested].T, np.divide(ytested - self.mu, self.B[tested]))
+            J = np.matmul(self.SIG_XM[tested].T, np.divide(ytested - self.mu, self.B[tested]))  # ytested
             self.mu_M_pos = self.mu + J - np.matmul(K, np.linalg.solve(K + self.SIG_MM, J))
 
         self.update_counter += 1

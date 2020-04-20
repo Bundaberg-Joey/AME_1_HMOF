@@ -295,7 +295,7 @@ class Prospector(object):
         None :
             Updates object attributes {`self.SIG_XM`, `self.SIG_MM`, `self.SIG_MM_pos`, `self.SIG_M_pos`}
         """
-        if np.mod(self.update_counter, self.updates_per_big_fit) == 0:
+        if self.update_counter % self.updates_per_big_fit == 0:
             ntested = len(tested)
 
             if ntested > self.nmax:

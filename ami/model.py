@@ -170,6 +170,29 @@ class Prospector(object):
         self.mu_M_pos = None
         self.B = None
 
+    def _update_inducing_point_posterior(self, tested, ytested):
+        """Minor fitting protocol, where the posterior mean and covariance matrix at the inducing points are updated.
+        Used when incorporating additional data points that have been tested but do not wish to perform expensive
+        hyperparameter udpate.
+
+        Parameters
+        ----------
+        tested : list shape(num_tested_points, )
+            Indices of data points in the feature matrix `X` which have been tested.
+
+        ytested : list shape(num_tested_points, )
+            List of target values which have been determined empirically by testing.
+
+        Returns
+        -------
+        None :
+            Updates attribues {`self.SIG_MM_pos`, `self.mu_M_pos`}
+        """
+        K = np.matmul(self.SIG_XM[tested].T, np.divide(self.SIG_XM[tested], self.B[tested].reshape(-1, 1)))
+        self.SIG_MM_pos = self.SIG_MM - K + np.matmul(K, np.linalg.solve(K + self.SIG_MM, K))
+        J = np.matmul(self.SIG_XM[tested].T, np.divide(ytested - self.mu, self.B[tested]))
+        self.mu_M_pos = self.mu + J - np.matmul(K, np.linalg.solve(K + self.SIG_MM, J))
+
     def fit(self, Y, tested, untested):
         """Fits model hyperparameter and inducing points using a GPy dense model to determine hyperparameters.
 
@@ -254,16 +277,10 @@ class Prospector(object):
             self.SIG_MM = self.a * np.exp(-DMM / 2) + np.identity(self.M.shape[0]) * self.lam * self.a
             self.B = self.a + self.b - np.sum(np.multiply(np.linalg.solve(self.SIG_MM, self.SIG_XM.T), self.SIG_XM.T),
                                               0)
-            K = np.matmul(self.SIG_XM[tested].T, np.divide(self.SIG_XM[tested], self.B[tested].reshape(-1, 1)))
-            self.SIG_MM_pos = self.SIG_MM - K + np.matmul(K, np.linalg.solve(K + self.SIG_MM, K))
-            J = np.matmul(self.SIG_XM[tested].T, np.divide(ytested - self.mu, self.B[tested]))
-            self.mu_M_pos = self.mu + J - np.matmul(K, np.linalg.solve(K + self.SIG_MM, J))
+            self._update_inducing_point_posterior(tested, ytested)
 
         else:
-            K = np.matmul(self.SIG_XM[tested].T, np.divide(self.SIG_XM[tested], self.B[tested].reshape(-1, 1)))
-            self.SIG_MM_pos = self.SIG_MM - K + np.matmul(K, np.linalg.solve(K + self.SIG_MM, K))
-            J = np.matmul(self.SIG_XM[tested].T, np.divide(ytested - self.mu, self.B[tested]))  # ytested
-            self.mu_M_pos = self.mu + J - np.matmul(K, np.linalg.solve(K + self.SIG_MM, J))
+            self._update_inducing_point_posterior(tested, ytested)
 
         self.update_counter += 1
 

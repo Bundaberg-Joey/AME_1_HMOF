@@ -12,6 +12,8 @@ from sklearn.metrics.pairwise import euclidean_distances
 
 import GPy
 
+from ami import checks
+
 
 class Prospector(object):
     """
@@ -107,9 +109,18 @@ class Prospector(object):
 
     Methods
     -------
-    fit(Y, STATUS)
-    predict(nsamples=1)
-    samples(nsamples=10, N=100)
+    fit(Y, STATUS) --> Fit model to determine model hyperparameters.
+    predict(nsamples=1) --> predict the mean and variance for each data point.
+    sample_posterior(self, n_repeats=1) --> draw samples from the posterior with n repetitions
+
+    property getter / setters:
+        * ntop
+        * nrecent
+        * nmax
+        * ntopmu
+        * ntopvar
+        * nkmeans
+        * nkmeansdata
 
     Notes
     -----
@@ -296,3 +307,66 @@ class Prospector(object):
         samples_X_pos = self.mu + np.matmul(self.SIG_XM, np.linalg.solve(self.SIG_MM, samples_M_pos - self.mu))
         return samples_X_pos
 
+    @property
+    def ntop(self):
+        return self._ntop
+
+    @ntop.setter
+    def ntop(self, value):
+        self._ntop = checks.pos_int(value)
+
+    @property
+    def nrecent(self):
+        return self._nrecent
+
+    @nrecent.setter
+    def nrecent(self, value):
+        self._nrecent = checks.pos_int(value)
+
+    @property
+    def nmax(self):
+        return self._nmax
+
+    @nmax.setter
+    def nmax(self, value):
+        self._nmax = checks.pos_int(value)
+
+    @property
+    def ntopmu(self):
+        return self._ntopmu
+
+    @ntopmu.setter
+    def ntopmu(self, value):
+        self._ntopmu = checks.pos_int(value)
+
+    @property
+    def ntopvar(self):
+        return self._ntopvar
+
+    @ntopvar.setter
+    def ntopvar(self, value):
+        self._ntopvar = checks.pos_int(value)
+
+    @property
+    def nkmeans(self):
+        return self._nkmeans
+
+    @nkmeans.setter
+    def nkmeans(self, value):
+        self._nkmeans = checks.pos_int(value)
+
+    @property
+    def nkeamnsdata(self):
+        return self._nkeamnsdata
+
+    @nkeamnsdata.setter
+    def nkeamnsdata(self, value):
+        self._nkeamnsdata = checks.pos_int(value)
+
+    @property
+    def lam(self):
+        return self._lam
+
+    @lam.setter
+    def lam(self, value):
+        self._lam = checks.any_float(value)

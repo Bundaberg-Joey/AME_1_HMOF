@@ -5,7 +5,6 @@ import argparse
 import numpy as np
 
 from AmiSimTools.DataTriage import DataTriageCSV
-from AmiSimTools.SimScreen import SimulatedScreenerSerial
 
 from ami.model import Prospector
 from ami import alpha, utilities

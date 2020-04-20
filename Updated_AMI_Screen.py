@@ -20,24 +20,28 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--data_file', action='store', default=data_location, help='path to data file')
     parser.add_argument('-i', '--initial_samples', action='store', type=int, default=50, help='# of random samples AMI takes')
     parser.add_argument('-m', '--max_iterations', action='store', type=int, default=300, help='# of materials AMI will sample')
-    parser.add_argument('-a', '--acquisition', action='store', type=str, default='greedy_tau')
+    parser.add_argument('-a', '--acquisition', action='store', type=str, default='thompson')
     args = parser.parse_args()
 
-    # use old code to quickly get the various initialisation stuff dones for data loading etc
+    n_tested, sample_method = args.initial_samples, args.acquisition
+
+    # setting up -------------------------------------------------------------------------------------------------------
     data = DataTriageCSV.load_from_path(args.data_file)
-    sim_screen = SimulatedScreenerSerial(data_params=data, max_iterations=args.max_iterations, sim_code='testing')
-    sim_screen.initial_random_samples(num_initial_samples=args.initial_samples)  # do the random sampling and all that
-    n_tested = args.initial_samples
-    sample_method = args.acquisition
+    X, y_true, y_exp, top_100 = data.X, data.y_true, data.y_experimental, data.top_100  # unpack
+    status = utilities.Status(len(X), 0)
 
-    X, y_true, y_exp, status, top_100 = data.X, data.y_true, data.y_experimental, data.status, data.top_100  # unpack
+    # update status and experimental arrays with random samples
+    random_samples = np.random.choice(len(y_true), n_tested, replace=False)
+    for sample in random_samples:
+        y_exp[sample, 0] = y_true[sample, 0]
+        status.update(sample, 2)
 
-    # updates ---------------------------------------------------------------------------------------------------------
     ami = Prospector(X=X, updates_per_big_fit=10)
+    # screning ---------------------------------------------------------------------------------------------------------
+
     while n_tested < args.max_iterations:
 
-        untested = [i for i in range(len(X)) if status[i] == 0]
-        tested = [i for i in range(len(X)) if status[i] == 2]
+        tested, untested = status.tested(), status.untested()
 
         ami.fit(y_exp, tested=tested, untested=untested)
 
@@ -76,9 +80,9 @@ if __name__ == '__main__':
         ipick = utilities.select_max_alpha(untested=untested, alpha=a)
 
         y_exp[ipick, 0] = y_true[ipick, 0]  # update experimental value with true value
-        status[ipick, 0] = 2  # update status
+        status.update(ipick, 2)
 
-        sampled = np.where(status != 0)[0]
+        sampled = status.tested()
         top_sampled = sum((1 for i in sampled if i in top_100))
         print(F'({n_tested}/{args.max_iterations}) : {top_sampled} of top 100 sampled')
 

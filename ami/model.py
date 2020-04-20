@@ -32,7 +32,7 @@ class Prospector(object):
     update_counter : int (default = 0)
         Counter to track the number of model iterations which have occured.
 
-    updates_per_big_fit : int (default = 0)
+    updates_per_big_fit : int (default = 10)
         The number of model iterations between sampling and fully fitting model hyperparameters.
         When the sample is made on a non `update_per_big_fit` iteration then model just fits to data.
 
@@ -121,17 +121,22 @@ class Prospector(object):
     of the large covariance matrices used by sparse inference.
     """
 
-    def __init__(self, X):
+    def __init__(self, X, updates_per_big_fit=10):
         """
         Parameters
         ----------
         X : np.array(), shape (num entries, num features)
             Feature matrix containing numerical values.
+
+        updates_per_big_fit : int (default = 10)
+            The number of model iterations between sampling and fully fitting model hyperparameters.
+            When the sample is made on a non `update_per_big_fit` iteration then model just fits to data.
+
         """
         self.X = X
         self.n, self.d = X.shape
+        self.updates_per_big_fit = updates_per_big_fit
         self.update_counter = 0
-        self.updates_per_big_fit = 10
         self.ntop = 100
         self.nrecent = 100
         self.nmax = 400

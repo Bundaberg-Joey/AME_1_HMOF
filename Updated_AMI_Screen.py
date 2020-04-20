@@ -33,7 +33,7 @@ if __name__ == '__main__':
     X, y_true, y_exp, status, top_100 = data.X, data.y_true, data.y_experimental, data.status, data.top_100  # unpack
 
     # updates ---------------------------------------------------------------------------------------------------------
-    ami = Prospector(X)
+    ami = Prospector(X=X, updates_per_big_fit=10)
     while n_tested < args.max_iterations:
 
         ami.fit(y_exp, status)

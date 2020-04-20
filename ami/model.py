@@ -193,6 +193,27 @@ class Prospector(object):
         J = np.matmul(self.SIG_XM[tested].T, np.divide(ytested - self.mu, self.B[tested]))
         self.mu_M_pos = self.mu + J - np.matmul(K, np.linalg.solve(K + self.SIG_MM, J))
 
+    def _determine_prior_covariance_matrices(self):
+        """Updates the prior covariance matrices of both the feature set and inducing points.
+        Rescales feature and inducing point matrices using the model feature length scales as length scale
+        will impact feature distance / significance.
+        The euclidean distances are then treated with a gaussian kernel and predicted kernel variance to inform
+        the relevant matrices.
+
+        Returns
+        -------
+        None :
+            Updates attributes {`self.SIG_XM`, `self.SIG_MM`, 'self.B'}
+        """
+        scaled_x = np.divide(self.X, self.l)
+        scaled_m = np.divide(self.M, self.l)
+        distance_xm = euclidean_distances(scaled_x, scaled_m, squared=True)
+        distance_mm = euclidean_distances(scaled_m, scaled_m, squared=True)
+        self.SIG_XM = self.a * np.exp(-distance_xm / 2)
+        self.SIG_MM = self.a * np.exp(-distance_mm / 2) + np.identity(self.M.shape[0]) * self.lam * self.a
+        self.B = self.a + self.b - np.sum(np.multiply(np.linalg.solve(self.SIG_MM, self.SIG_XM.T), self.SIG_XM.T), 0)
+
+
     def fit(self, Y, tested, untested):
         """Fits model hyperparameter and inducing points using a GPy dense model to determine hyperparameters.
 
@@ -271,12 +292,7 @@ class Prospector(object):
             self.M = np.vstack((self.X[nystrom], np.multiply(kms.cluster_centers_, self.l)))
 
             print('fitting sparse model')
-            DXM = euclidean_distances(np.divide(self.X, self.l), np.divide(self.M, self.l), squared=True)
-            self.SIG_XM = self.a * np.exp(-DXM / 2)
-            DMM = euclidean_distances(np.divide(self.M, self.l), np.divide(self.M, self.l), squared=True)
-            self.SIG_MM = self.a * np.exp(-DMM / 2) + np.identity(self.M.shape[0]) * self.lam * self.a
-            self.B = self.a + self.b - np.sum(np.multiply(np.linalg.solve(self.SIG_MM, self.SIG_XM.T), self.SIG_XM.T),
-                                              0)
+            self._determine_prior_covariance_matrices()
             self._update_inducing_point_posterior(tested, ytested)
 
         else:

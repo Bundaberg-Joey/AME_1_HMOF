@@ -6,6 +6,9 @@ Fits hyperparameters using dense GPy model.
 Special routines for sparse sampling from posterior.
 """
 
+# TODO : rip the clustering algorithm out and have that as initialisation parameter, can make model attribute (will have to update setter of nkmeans to also update this)
+# TODO : rename the attribues of this thing... yeesh
+
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.metrics.pairwise import euclidean_distances
@@ -213,6 +216,36 @@ class Prospector(object):
         self.SIG_MM = self.a * np.exp(-distance_mm / 2) + np.identity(self.M.shape[0]) * self.lam * self.a
         self.B = self.a + self.b - np.sum(np.multiply(np.linalg.solve(self.SIG_MM, self.SIG_XM.T), self.SIG_XM.T), 0)
 
+    def _select_inducing_points(self, untested, train):
+        """Determines optimal location of inducing points for fitting the sparse gaussian model.
+
+        `KMeansCLustering` with `nkmeans` clusters is used to get nontested inducing points spread through the domain.
+        Clustering can be expensive, a random uniform sample of `nkmeansdata` points from the untested points are taken.
+        To ensure the model's length scales are factored into the clustering (euclidean distance) the coordinates are
+        scaled using the length scales `self.l` to ensure an appropriate distance measure is used.
+
+        Parameters
+        ----------
+        untested : list shape(num_points_untested, )
+            Indices of data points in the feature matrix `X` which have not been tested.
+
+        train : list shape(num_points_tested, )
+            Indices of data points in the feature matrix `X` which have been tested, to balance inducing points.
+
+        Returns
+        -------
+        None :
+            Updates attribue `self.M`
+        """
+        topmu = [untested[i] for i in np.argsort(self.py[0][untested].reshape(-1))[-self.ntopmu:]]
+        topvar = [untested[i] for i in np.argsort(self.py[1][untested].reshape(-1))[-self.ntopvar:]]
+        nystrom = topmu + topvar + train
+
+        rand_X = self.X[np.random.choice(untested, self.nkeamnsdata)]
+        rand_scaled_X = np.divide(rand_X, self.l)
+        kms = KMeans(n_clusters=self.nkmeans, max_iter=5).fit(rand_scaled_X)
+
+        self.M = np.vstack((self.X[nystrom], np.multiply(kms.cluster_centers_, self.l)))
 
     def fit(self, Y, tested, untested):
         """Fits model hyperparameter and inducing points using a GPy dense model to determine hyperparameters.
@@ -281,15 +314,10 @@ class Prospector(object):
             self.a = self.GP.flattened_parameters[1]
             self.l = self.GP.flattened_parameters[2]
             self.b = self.GP.flattened_parameters[3]
+            self.py = self.GP.predict(self.X)
 
             print('selecting inducing points')
-            self.py = self.GP.predict(self.X)
-            topmu = [untested[i] for i in np.argsort(self.py[0][untested].reshape(-1))[-self.ntopmu:]]
-            topvar = [untested[i] for i in np.argsort(self.py[1][untested].reshape(-1))[-self.ntopvar:]]
-            nystrom = topmu + topvar + train
-            kms = KMeans(n_clusters=self.nkmeans, max_iter=5).fit(
-                np.divide(self.X[list(np.random.choice(untested, self.nkeamnsdata))], self.l))
-            self.M = np.vstack((self.X[nystrom], np.multiply(kms.cluster_centers_, self.l)))
+            self._select_inducing_points(untested, train)
 
             print('fitting sparse model')
             self._determine_prior_covariance_matrices()

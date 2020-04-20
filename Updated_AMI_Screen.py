@@ -18,7 +18,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--data_file', action='store', default=data_location, help='path to data file')
     parser.add_argument('-i', '--initial_samples', action='store', type=int, default=50, help='# of random samples AMI takes')
-    parser.add_argument('-m', '--max_iterations', action='store', type=int, default=300, help='# of materials AMI will sample')
+    parser.add_argument('-m', '--max_iterations', action='store', type=int, default=120, help='# of materials AMI will sample')
     parser.add_argument('-a', '--acquisition', action='store', type=str, default='thompson')
     args = parser.parse_args()
 

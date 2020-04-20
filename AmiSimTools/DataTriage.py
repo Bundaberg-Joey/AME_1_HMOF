@@ -65,8 +65,8 @@ class DataTriage(object):
         :param n: int, the number of entries in the passed array `y`
         :return: (y_true, y_experimental), column vectors, [0] with all target values, [1] for determined values
         """
-        y_true = y.reshape(-1, 1)  # column vector
-        y_experimental = np.full((n, 1), np.nan)  # nan as values not yet determined on initialisation
+        y_true = y
+        y_experimental = np.full(n, np.nan)  # nan as values not yet determined on initialisation
         return y_true, y_experimental
 
 

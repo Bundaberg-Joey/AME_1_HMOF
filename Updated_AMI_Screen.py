@@ -32,7 +32,7 @@ if __name__ == '__main__':
     # update status and experimental arrays with random samples
     random_samples = np.random.choice(len(y_true), n_tested, replace=False)
     for sample in random_samples:
-        y_exp[sample, 0] = y_true[sample, 0]
+        y_exp[sample] = y_true[sample]
         status.update(sample, 2)
 
     ami = Prospector(X=X, updates_per_big_fit=10)
@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
         tested, untested = status.tested(), status.untested()
 
-        ami.fit(y_exp, tested=tested, untested=untested)
+        ami.fit(y_exp[tested], tested=tested, untested=untested)
 
         # --> Thompson
         if sample_method == 'thompson':
@@ -78,7 +78,7 @@ if __name__ == '__main__':
 
         ipick = utilities.select_max_alpha(untested=untested, alpha=a)
 
-        y_exp[ipick, 0] = y_true[ipick, 0]  # update experimental value with true value
+        y_exp[ipick] = y_true[ipick]  # update experimental value with true value
         status.update(ipick, 2)
 
         sampled = status.tested()

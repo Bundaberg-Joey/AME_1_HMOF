@@ -273,7 +273,7 @@ class Prospector(object):
         self.mu, self.a, self.l, self.b = gpr.flattened_parameters[:4]
         self.py = gpr.predict(self.X)
 
-    def fit(self, Y, tested, untested):
+    def fit(self, ytested, tested, untested):
         """Fits model hyperparameter and inducing points using a GPy dense model to determine hyperparameters.
 
         Each time `fit` is run, the number of points assessed is calculated. If it is greater than `nmax` then to
@@ -285,8 +285,8 @@ class Prospector(object):
 
         Parameters
         ----------
-        Y : np.array(), shape(num_entries, )
-            True values of target points selected to be assessed.
+        ytested : np.array(), shape(num_points_tested, )
+            Values of target points which have been determined empirically.
 
         tested : list
             List containing indices of data points in `X` which have been tested.
@@ -299,7 +299,6 @@ class Prospector(object):
         None :
             Updates object attributes {`self.SIG_XM`, `self.SIG_MM`, `self.SIG_MM_pos`, `self.SIG_M_pos`}
         """
-        ytested = Y[tested].reshape(-1)
         self.y_max = np.max(ytested)
 
         if np.mod(self.update_counter, self.updates_per_big_fit) == 0:

@@ -36,7 +36,10 @@ if __name__ == '__main__':
     ami = Prospector(X=X, updates_per_big_fit=10)
     while n_tested < args.max_iterations:
 
-        ami.fit(y_exp, status)
+        untested = [i for i in range(len(X)) if status[i] == 0]
+        tested = [i for i in range(len(X)) if status[i] == 2]
+
+        ami.fit(y_exp, tested=tested, untested=untested)
 
         # --> Thompson
         if sample_method == 'thompson':
@@ -70,7 +73,6 @@ if __name__ == '__main__':
             print('No valid sampling method selected')
             break
 
-        untested = np.where(status == 0)[0]
         ipick = utilities.select_max_alpha(untested=untested, alpha=a)
 
         y_exp[ipick, 0] = y_true[ipick, 0]  # update experimental value with true value

@@ -170,7 +170,7 @@ class Prospector(object):
         self.mu_M_pos = None
         self.B = None
 
-    def fit(self, Y, STATUS):
+    def fit(self, Y, tested, untested):
         """Fits model hyperparameter and inducing points using a GPy dense model to determine hyperparameters.
 
         Each time `fit` is run, the number of points assessed is calculated. If it is greater than `nmax` then to
@@ -197,8 +197,11 @@ class Prospector(object):
         Y : np.array(), shape(num_entries,)
             True values of target points selected to be assessed.
 
-        STATUS : np.array(), shape(num_entries,1)
-            Vector which tracks which points have been assessed or not and to what degree.
+        tested : list
+            List containing indices of data points in `X` which have been tested.
+
+        untested : list
+            List containing indices of data points in `X` which have not yet been tested.
 
         Returns
         -------
@@ -206,8 +209,6 @@ class Prospector(object):
             Updates object attributes {`self.SIG_XM`, `self.SIG_MM`, `self.SIG_MM_pos`, `self.SIG_M_pos`}
         """
         X = self.X
-        untested = [i for i in range(self.n) if STATUS[i] == 0]
-        tested = [i for i in range(self.n) if STATUS[i] == 2]
         ytested = Y[tested].reshape(-1)
         self.y_max = np.max(ytested)
 

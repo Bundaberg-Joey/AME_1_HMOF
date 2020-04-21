@@ -105,6 +105,97 @@ class Status(object):
 # ----------------------------------------------------------------------------------------------------------------------
 
 
+class FrugalTrainer(object):
+    """Determines ideal training points to consider to facilitate sparse fitting of the Prospector.
+
+    Attributes
+    ----------
+    nmax : int
+        The highest number of data points to be allowed in the training set.
+
+    ntop : int
+        The number of`top` data points to be included in the training set.
+
+    nrecent : int
+        The `n` most recently sampled data points to include in training data.
+
+
+    Methods
+    -------
+    select_training_points(self, tested_indices, test_results) --> determines training data.
+
+    Notes
+    -----
+    As the prospector works by considering nystrom inducing points rather than a full `n` by `n`
+    covariance matrix, it is ideal to keep the size of the training data small.
+    Here, the training set is contained to an upper limit of `nmax`, which is either the data
+    acquired up till now or a more frugal selection.
+    The frugal selection combines the `ntop` highest value data points, the `nrecent` training
+    points, with the remainder being random data points which have already been tested.
+    """
+
+    def __init__(self, nmax=400, ntop=100, nrecent=100):
+        """
+        Parameters
+        ----------
+        nmax : int
+            The highest number of data points to be allowed in the training set.
+
+        ntop : int
+            The number of`top` data points to be included in the training set.
+
+        nrecent : int
+            The `n` most recently sampled data points to include in training data.
+        """
+        self.nmax = nmax
+        self.ntop = ntop
+        self.nrecent = nrecent
+
+    def select_training_points(self, tested_indices, test_results):
+        """Selects training points to use, given imposed constraints on initialisation.
+        If the number of tested points is less than the user maximum, then just returns passed arrays to user.
+
+        Parameters
+        ----------
+        tested_indices : list / array, shape(num_tested_points, )
+            Indices of data points in the feature matrix which have been tested.
+
+        test_results : list / array, shape(num_tested_points, )
+            Target values of data points which have been tested.
+
+        Returns
+        -------
+        (train_indices, y_train) : tuple of np.array(), shape( 1<= `nmax`, )
+            Indices of data points to use and their emperical target values.
+            The size of the arrays are dependant on the conditional size.
+        """
+
+        tested_indices = np.array(tested_indices)
+        y_tested = np.array(test_results)
+        n_tested = len(y_tested)
+
+        if n_tested > self.nmax:
+            indices = np.arange(0, n_tested, 1)
+
+            top_ind = np.argsort(y_tested)[-self.ntop:]
+            recent_ind = indices[n_tested - self.nrecent:]
+            top_recent_ind = np.unique(np.concatenate((top_ind, recent_ind)), axis=0)
+
+            not_toprecent = indices[np.isin(indices, top_recent_ind, invert=True)]
+            rand = np.random.choice(not_toprecent, self.nmax - len(top_recent_ind), replace=False)
+
+            testedtrain = np.concatenate((top_recent_ind, rand))
+            train_indices, y_train = tested_indices[testedtrain], y_tested[testedtrain]
+
+        else:
+            train_indices, y_train = tested_indices, test_results
+
+        return train_indices, y_train
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
 def select_max_alpha(untested, alpha):
     """Given the alpha values for each member of the dataset and list of untested points,
     select the next point for investigation with the highest alpha value which has not yet been tested.
@@ -164,4 +255,3 @@ def estimate_tau(posterior, n):
 
     tau = np.median(taus)
     return tau
-

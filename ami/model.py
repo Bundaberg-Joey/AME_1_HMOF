@@ -233,7 +233,7 @@ class Prospector(object):
         """
         topmu = [untested[i] for i in np.argsort(self.py[0][untested].reshape(-1))[-self.ntopmu:]]
         topvar = [untested[i] for i in np.argsort(self.py[1][untested].reshape(-1))[-self.ntopvar:]]
-        nystrom = topmu + topvar + train
+        nystrom = np.concatenate((topmu, topvar, train))
 
         rand_X = self.X[np.random.choice(untested, self.nkeamnsdata)]
         rand_scaled_X = np.divide(rand_X, self.l)
@@ -269,13 +269,8 @@ class Prospector(object):
         self.mu, self.a, self.l, self.b = gpr.flattened_parameters[:4]
         self.py = gpr.predict(self.X)
 
-    def fit(self, ytested, tested, untested):
+    def fit(self, ytested, tested, untested, train, ytrain):
         """Fits model hyperparameter and inducing points using a GPy dense model to determine hyperparameters.
-
-        Each time `fit` is run, the number of points assessed is calculated. If it is greater than `nmax` then to
-        conserve computational power only a subsample of points are considered.
-        The subsample will contain the `nrecent', `ntopmu` points and (`nmax`-('nrecent'+'ntopmu')) random points not
-        present in the `nrecent` or `ntopmu` points.
 
         NOTE : Contact Dr Hook by email `james.l.hook@gmail.com` if serious issues develop during the fitting process,
 
@@ -296,21 +291,6 @@ class Prospector(object):
             Updates object attributes {`self.SIG_XM`, `self.SIG_MM`, `self.SIG_MM_pos`, `self.SIG_M_pos`}
         """
         if self.update_counter % self.updates_per_big_fit == 0:
-            ntested = len(tested)
-
-            if ntested > self.nmax:
-                top = list(np.argsort(ytested)[-self.ntop:])
-                recent = list(range(ntested - self.nrecent, ntested))
-                topandrecent = list(set(top + recent))
-                rand = list(
-                    np.random.choice([i for i in range(ntested) if i not in topandrecent], self.nmax - len(topandrecent),
-                                     False))
-                testedtrain = topandrecent + rand
-                ytrain = ytested[testedtrain]
-                train = [tested[i] for i in testedtrain]
-            else:
-                train = tested
-                ytrain = ytested
 
             print('fitting hyperparameters')
             self._fit_hyperparameters(train, ytrain)

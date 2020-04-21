@@ -43,15 +43,6 @@ class Prospector(object):
         The number of model iterations between sampling and fully fitting model hyperparameters.
         When the sample is made on a non `update_per_big_fit` iteration then model just fits to data.
 
-    ntop : int (default = 100)
-        The top n true points to consider when performing the fit on subset.
-
-    nrecent : int (default = 100)
-        The number of recent samples to consider when performing fit on subset.
-
-    nmax : int (default = 400)
-        The maximum number of random samples to be taken by the model when fitting.
-
     ntopmu : int (default = 100)
         The number of untested points which the model predicts to be the highest ranked.
         Used to generate inducing points when fitting model.
@@ -113,9 +104,6 @@ class Prospector(object):
     sample_posterior(self, n_repeats=1) --> draw samples from the posterior with n repetitions
 
     property getter / setters:
-        * ntop
-        * nrecent
-        * nmax
         * ntopmu
         * ntopvar
         * nkmeans
@@ -147,9 +135,6 @@ class Prospector(object):
         self.n, self.d = X.shape
         self.updates_per_big_fit = updates_per_big_fit
         self.update_counter = 0
-        self.ntop = 100
-        self.nrecent = 100
-        self.nmax = 400
         self.ntopmu = 100
         self.ntopvar = 100
         self.nkmeans = 300
@@ -346,30 +331,6 @@ class Prospector(object):
         samples_M_pos = np.random.multivariate_normal(self.mu_M_pos, self.SIG_MM_pos, n_repeats).T
         samples_X_pos = self.mu + np.matmul(self.SIG_XM, np.linalg.solve(self.SIG_MM, samples_M_pos - self.mu))
         return samples_X_pos
-
-    @property
-    def ntop(self):
-        return self._ntop
-
-    @ntop.setter
-    def ntop(self, value):
-        self._ntop = checks.pos_int(value)
-
-    @property
-    def nrecent(self):
-        return self._nrecent
-
-    @nrecent.setter
-    def nrecent(self, value):
-        self._nrecent = checks.pos_int(value)
-
-    @property
-    def nmax(self):
-        return self._nmax
-
-    @nmax.setter
-    def nmax(self, value):
-        self._nmax = checks.pos_int(value)
 
     @property
     def ntopmu(self):

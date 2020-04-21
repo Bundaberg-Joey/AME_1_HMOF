@@ -19,10 +19,9 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--data_file', action='store', default=data_location, help='path to data file')
     parser.add_argument('-i', '--initial_samples', action='store', type=int, default=50, help='# of random samples AMI takes')
     parser.add_argument('-m', '--max_iterations', action='store', type=int, default=120, help='# of materials AMI will sample')
-    parser.add_argument('-a', '--acquisition', action='store', type=str, default='ei')
     args = parser.parse_args()
 
-    n_tested, sample_method = args.initial_samples, args.acquisition
+    n_tested = args.initial_samples
 
     # setting up -------------------------------------------------------------------------------------------------------
     data = DataTriageCSV.load_from_path(args.data_file)
@@ -44,39 +43,8 @@ if __name__ == '__main__':
         y_tested = y_exp[tested]
         ami.fit(y_tested, tested=tested, untested=untested)
 
-        # --> Thompson
-        if sample_method == 'thompson':
-            posterior = ami.sample_posterior(n_repeats=1)
-            a = alpha.thompson(posterior)
-
-        # --> Greedy N
-        elif sample_method == 'greedy_n':
-            N = 100
-            posterior = ami.sample_posterior(n_repeats=100)
-            a = alpha.greedy_n(posterior, n=N)
-
-        # --> EI
-        elif sample_method == 'ei':
-            mu_pred, var_pred = ami.predict()
-            y_max = np.max(y_tested)
-            a = alpha.expected_improvement(mu_pred, var_pred, y_max)
-
-        # --> Greedy Tau
-        elif sample_method == 'greedy_tau':
-            N = 100
-            posterior = ami.sample_posterior(n_repeats=10)
-            tau = utilities.estimate_tau(posterior, n=N)
-            mu_pred, var_pred = ami.predict()
-            a = alpha.greedy_tau(mu_pred, var_pred, tau)
-
-        # --> Random
-        elif sample_method == 'random':
-            a = alpha.random(len(X))
-
-        else:
-            print('No valid sampling method selected')
-            break
-
+        posterior = ami.sample_posterior(n_repeats=1)  # thompson sampling
+        a = alpha.thompson(posterior)
         ipick = utilities.select_max_alpha(untested=untested, alpha=a)
 
         y_exp[ipick] = y_true[ipick]  # update experimental value with true value

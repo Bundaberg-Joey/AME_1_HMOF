@@ -36,13 +36,6 @@ class Prospector(object):
     d : int
         Number of columns in the feature matrix `X`.
 
-    update_counter : int (default = 0)
-        Counter to track the number of model iterations which have occured.
-
-    updates_per_big_fit : int (default = 10)
-        The number of model iterations between sampling and fully fitting model hyperparameters.
-        When the sample is made on a non `update_per_big_fit` iteration then model just fits to data.
-
     ntopmu : int (default = 100)
         The number of untested points which the model predicts to be the highest ranked.
         Used to generate inducing points when fitting model.
@@ -99,7 +92,8 @@ class Prospector(object):
 
     Methods
     -------
-    fit(Y, STATUS) --> Fit model to determine model hyperparameters.
+    fit_posterior(ytested, tested) --> Update posterior distribution with new data points.
+    update_model_parameters(untested, train, ytrain) --> Update the hyperparams / inducing points / covariance matrices
     predict(nsamples=1) --> predict the mean and variance for each data point.
     sample_posterior(self, n_repeats=1) --> draw samples from the posterior with n repetitions
 
@@ -114,27 +108,19 @@ class Prospector(object):
     Used to identify the top ranking members of a dataset for a passed target by an adaptive grid searching approach.
     The model predictions are based on gaussian process regression, allowing the predicted mean and variance values to
     drive the selection of the next dataset member to investigate.
-    Numerous selection algorithms are implemented and are selected by passing the keyword to the init function: []
     Nystrom inducing points inducing points that are also actual trainingdata points) are used to speed up the fitting
     of the large covariance matrices used by sparse inference.
     """
 
-    def __init__(self, X, updates_per_big_fit=10):
+    def __init__(self, X):
         """
         Parameters
         ----------
         X : np.array(), shape (num entries, num features)
             Feature matrix containing numerical values.
-
-        updates_per_big_fit : int (default = 10)
-            The number of model iterations between sampling and fully fitting model hyperparameters.
-            When the sample is made on a non `update_per_big_fit` iteration then model just fits to data.
-
         """
         self.X = X
         self.n, self.d = X.shape
-        self.updates_per_big_fit = updates_per_big_fit
-        self.update_counter = 0
         self.ntopmu = 100
         self.ntopvar = 100
         self.nkmeans = 300
@@ -151,29 +137,6 @@ class Prospector(object):
         self.SIG_MM_pos = None
         self.mu_M_pos = None
         self.B = None
-
-    def _update_inducing_point_posterior(self, tested, ytested):
-        """Minor fitting protocol, where the posterior mean and covariance matrix at the inducing points are updated.
-        Used when incorporating additional data points that have been tested but do not wish to perform expensive
-        hyperparameter udpate.
-
-        Parameters
-        ----------
-        tested : list shape(num_tested_points, )
-            Indices of data points in the feature matrix `X` which have been tested.
-
-        ytested : list shape(num_tested_points, )
-            List of target values which have been determined empirically by testing.
-
-        Returns
-        -------
-        None :
-            Updates attribues {`self.SIG_MM_pos`, `self.mu_M_pos`}
-        """
-        K = np.matmul(self.SIG_XM[tested].T, np.divide(self.SIG_XM[tested], self.B[tested].reshape(-1, 1)))
-        self.SIG_MM_pos = self.SIG_MM - K + np.matmul(K, np.linalg.solve(K + self.SIG_MM, K))
-        J = np.matmul(self.SIG_XM[tested].T, np.divide(ytested - self.mu, self.B[tested]))
-        self.mu_M_pos = self.mu + J - np.matmul(K, np.linalg.solve(K + self.SIG_MM, J))
 
     def _determine_prior_covariance_matrices(self):
         """Updates the prior covariance matrices of both the feature set and inducing points.
@@ -226,7 +189,7 @@ class Prospector(object):
 
         self.M = np.vstack((self.X[nystrom], np.multiply(kms.cluster_centers_, self.l)))
 
-    def _fit_hyperparameters(self, train, ytrain):
+    def _update_hyperparameters(self, train, ytrain):
         """Fits hyperparameters of the gaussian process regressor using external model.
 
         The `GPy` library is used to fit the base model parameters {`self.mu`, `self.a`, `self.l`, `self.b`} which
@@ -254,43 +217,63 @@ class Prospector(object):
         self.mu, self.a, self.l, self.b = gpr.flattened_parameters[:4]
         self.py = gpr.predict(self.X)
 
-    def fit(self, ytested, tested, untested, train, ytrain):
-        """Fits model hyperparameter and inducing points using a GPy dense model to determine hyperparameters.
+    def update_model_parameters(self, untested, train, ytrain):
+        """Updates the parameters of the Gaussian Process Regressor, inducing points and associated covariance matrices.
 
-        NOTE : Contact Dr Hook by email `james.l.hook@gmail.com` if serious issues develop during the fitting process,
+        Notes
+        -----
+        Contact Dr Hook by email `james.l.hook@gmail.com` if serious issues develop during the fitting process.
+
+        Parameters
+        ----------
+        untested : list / np.array(), shape(num_points_tested, )
+            Indices of data points in `X` which have not yet been tested.
+
+        train : list / np.array(), shape(1D)
+            Indices of data points n `X` used to determine GP hyperparameters and inducing point locations.
+            These are not determined in the same manner as `untested` and so the size of the passed
+            array does not always equal `num_points_tested`.
+
+        ytrain : list / np.array(), shape(num_training_points, )
+            Emperical values of the data points present in `train`
+            The same caveats apply to `ytrain` as `train`
+
+        Returns
+        -------
+        None :
+            Updates numerous attribues concerned with model parameters, covariance matrices and inducing points.
+        """
+        untested, train, ytrain = np.array(untested), np.array(train), np.array(ytrain)
+        self._update_hyperparameters(train, ytrain)
+        self._select_inducing_points(untested, train)
+        self._determine_prior_covariance_matrices()
+
+    def fit_posterior(self, ytested, tested):
+        """Incorporates the tested data points in to the Gaussian Process Regressors posterior distribution.
+        Posterior mean and covariance matrix at the inducing points are updated.
+
+        Notes
+        -----
+        Explicitly different from `update_model_parameters` as internal hyperparameters not updated during `fit`.
+        Only the posterior distribution is updated here to reduce expense of always updating hyperparameters and inducing points
 
         Parameters
         ----------
         ytested : np.array(), shape(num_points_tested, )
             Values of target points which have been determined empirically.
 
-        tested : list
+        tested : list / np.array(), shape(num_points_tested, )
             List containing indices of data points in `X` which have been tested.
-
-        untested : list
-            List containing indices of data points in `X` which have not yet been tested.
 
         Returns
         -------
         None :
-            Updates object attributes {`self.SIG_XM`, `self.SIG_MM`, `self.SIG_MM_pos`, `self.SIG_M_pos`}
+            Updates attributes {`self.SIG_MM_pos`, `self.SIG_M_pos`}
         """
-        if self.update_counter % self.updates_per_big_fit == 0:
-
-            print('fitting hyperparameters')
-            self._fit_hyperparameters(train, ytrain)
-
-            print('selecting inducing points')
-            self._select_inducing_points(untested, train)
-
-            print('fitting sparse model')
-            self._determine_prior_covariance_matrices()
-            self._update_inducing_point_posterior(tested, ytested)
-
-        else:
-            self._update_inducing_point_posterior(tested, ytested)
-
-        self.update_counter += 1
+        K = np.matmul(self.SIG_XM[tested].T, np.divide(self.SIG_XM[tested], self.B[tested].reshape(-1, 1)))
+        self.SIG_MM_pos = self.SIG_MM - K + np.matmul(K, np.linalg.solve(K + self.SIG_MM, K))
+        J = np.matmul(self.SIG_XM[tested].T, np.divide(ytested - self.mu, self.B[tested]))
+        self.mu_M_pos = self.mu + J - np.matmul(K, np.linalg.solve(K + self.SIG_MM, J))
 
     def predict(self):
         """Calculates the predicted mean and predicted variance of the full dataset.

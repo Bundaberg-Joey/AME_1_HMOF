@@ -34,18 +34,22 @@ if __name__ == '__main__':
         y_exp[sample] = y_true[sample]
         status.update(sample, 2)
 
-    model = Prospector(X=X, updates_per_big_fit=10)
+    model = Prospector(X=X)
     ft = utilities.FrugalTrainer(nmax=80, ntop=20, nrecent=20)
     # screning ---------------------------------------------------------------------------------------------------------
+    updates_per_big_fit = 10
 
     while n_tested < args.max_iterations:
 
         tested, untested = status.tested(), status.untested()
         y_tested = y_exp[tested]
 
-        train, ytrain = ft.select_training_points(tested, y_tested)
+        if n_tested % updates_per_big_fit == 0:
+            print('fitting hyperparameters')
+            train, ytrain = ft.select_training_points(tested, y_tested)
+            model.update_model_parameters(untested, train, ytrain)
 
-        model.fit(y_tested, tested=tested, untested=untested, train=train, ytrain=ytrain)
+        model.fit_posterior(y_tested, tested)
 
         posterior = model.sample_posterior(n_repeats=1)  # thompson sampling
         a = alpha.thompson(posterior)

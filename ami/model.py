@@ -28,6 +28,12 @@ class Prospector(object):
     X : np.array(), shape (num entries, num features)
         Feature matrix containing numerical values.
 
+    cluster_func : clustering algorithm (default = KMeans(n_clusters=300, max_iter=5))
+        Clustering algorithm used to select inducing points.
+        Must have the below functionality:
+            * `fit(np.array(num_entries, num_features)` --> determine clusters for data and store internally
+            * `cluster_centers_` --> np.array(), shape(num_entries, num_features)
+
     n : int
         Number of rows in the feature matrix `X`.
 

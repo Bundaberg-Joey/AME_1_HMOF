@@ -6,7 +6,6 @@ Fits hyperparameters using dense GPy model.
 Special routines for sparse sampling from posterior.
 """
 
-# TODO : rip the clustering algorithm out and have that as initialisation parameter, can make model attribute (will have to update setter of nkmeans to also update this)
 # TODO : rename the attribues of this thing... yeesh
 
 import numpy as np
@@ -21,8 +20,7 @@ from ami import checks
 
 
 class Prospector(object):
-    """
-    Adaptive grid searching algorithm combining gaussian process regression (RBF kernel) and bayesian optimisation.
+    """Adaptive grid searching algorithm combining gaussian process regression (RBF kernel) and bayesian optimisation.
 
 
     Attributes
@@ -44,10 +42,7 @@ class Prospector(object):
         The number of untested points which the model has the highest uncertainty values for.
         Used to generate inducing points when fitting model.
 
-    nkmeans : int (default = 300)
-        Number of clusters to consider when using KMeansClustering when determining inducing points for fit.
-
-    nkeamnsdata : int (default = 5000)
+    n_points_to_cluster : int (default = 5000)
         Number of points fed into the KMeansCLustering algorithm for determining inducing points for fit.
 
     lam : float (default = 1e-6)
@@ -100,8 +95,8 @@ class Prospector(object):
     property getter / setters:
         * ntopmu
         * ntopvar
-        * nkmeans
-        * nkmeansdata
+        * n_points_to_cluster
+
 
     Notes
     -----
@@ -112,19 +107,26 @@ class Prospector(object):
     of the large covariance matrices used by sparse inference.
     """
 
-    def __init__(self, X):
+    def __init__(self, X, cluster_func=KMeans(n_clusters=300, max_iter=5)):
         """
         Parameters
         ----------
         X : np.array(), shape (num entries, num features)
             Feature matrix containing numerical values.
+
+        cluster_func : clustering algorithm (default = KMeans(n_clusters=300, max_iter=5))
+            Clustering algorithm used to select inducing points.
+            Must have the below functionality:
+                * `fit(np.array(num_entries, num_features)` --> determine clusters for data and store internally
+                * `cluster_centers_` --> np.array(), shape(num_entries, num_features)
+
         """
         self.X = X
+        self.cluster_func = cluster_func
         self.n, self.d = X.shape
         self.ntopmu = 100
         self.ntopvar = 100
-        self.nkmeans = 300
-        self.nkeamnsdata = 5000
+        self.n_points_to_cluster = 5000
         self.lam = 1e-6
         self.mu = None
         self.a = None
@@ -161,8 +163,8 @@ class Prospector(object):
     def _select_inducing_points(self, untested, train):
         """Determines optimal location of inducing points for fitting the sparse gaussian model.
 
-        `KMeansCLustering` with `nkmeans` clusters is used to get nontested inducing points spread through the domain.
-        Clustering can be expensive, a random uniform sample of `nkmeansdata` points from the untested points are taken.
+        Uses `cluster_func` to get nontested inducing points spread through the domain.
+        Random uniform sample of `n_points_to_cluster` points from the untested points are taken due to cluster expense.
         To ensure the model's length scales are factored into the clustering (euclidean distance) the coordinates are
         scaled using the length scales `self.l` to ensure an appropriate distance measure is used.
 
@@ -183,11 +185,11 @@ class Prospector(object):
         topvar = [untested[i] for i in np.argsort(self.py[1][untested].reshape(-1))[-self.ntopvar:]]
         nystrom = np.concatenate((topmu, topvar, train))
 
-        rand_X = self.X[np.random.choice(untested, self.nkeamnsdata)]
+        rand_X = self.X[np.random.choice(untested, self.n_points_to_cluster)]
         rand_scaled_X = np.divide(rand_X, self.l)
-        kms = KMeans(n_clusters=self.nkmeans, max_iter=5).fit(rand_scaled_X)
+        self.cluster_func.fit(rand_scaled_X)
 
-        self.M = np.vstack((self.X[nystrom], np.multiply(kms.cluster_centers_, self.l)))
+        self.M = np.vstack((self.X[nystrom], np.multiply(self.cluster_func.cluster_centers_, self.l)))
 
     def _update_hyperparameters(self, train, ytrain):
         """Fits hyperparameters of the gaussian process regressor using external model.
@@ -332,20 +334,12 @@ class Prospector(object):
         self._ntopvar = checks.pos_int(value)
 
     @property
-    def nkmeans(self):
-        return self._nkmeans
+    def n_points_to_cluster(self):
+        return self._n_points_to_cluster
 
-    @nkmeans.setter
-    def nkmeans(self, value):
-        self._nkmeans = checks.pos_int(value)
-
-    @property
-    def nkeamnsdata(self):
-        return self._nkeamnsdata
-
-    @nkeamnsdata.setter
-    def nkeamnsdata(self, value):
-        self._nkeamnsdata = checks.pos_int(value)
+    @n_points_to_cluster.setter
+    def n_points_to_cluster(self, value):
+        self._n_points_to_cluster = checks.pos_int(value)
 
     @property
     def lam(self):

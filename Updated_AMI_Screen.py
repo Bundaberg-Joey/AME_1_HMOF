@@ -6,7 +6,7 @@ import numpy as np
 
 from AmiSimTools.DataTriage import DataTriageCSV
 
-from ami.model import Prospector
+from ami.model import Prospector, FrugalTrainer
 from ami import alpha, utilities
 
 
@@ -35,7 +35,7 @@ if __name__ == '__main__':
         status.update(sample, 2)
 
     model = Prospector(X=X)
-    ft = utilities.FrugalTrainer(nmax=80, ntop=20, nrecent=20)
+    ft = FrugalTrainer(nmax=80, ntop=20, nrecent=20)
     # screning ---------------------------------------------------------------------------------------------------------
     updates_per_big_fit = 10
 

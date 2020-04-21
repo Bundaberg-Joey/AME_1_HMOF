@@ -34,16 +34,16 @@ if __name__ == '__main__':
         y_exp[sample] = y_true[sample]
         status.update(sample, 2)
 
-    ami = Prospector(X=X, updates_per_big_fit=10)
+    model = Prospector(X=X, updates_per_big_fit=10)
     # screning ---------------------------------------------------------------------------------------------------------
 
     while n_tested < args.max_iterations:
 
         tested, untested = status.tested(), status.untested()
         y_tested = y_exp[tested]
-        ami.fit(y_tested, tested=tested, untested=untested)
+        model.fit(y_tested, tested=tested, untested=untested)
 
-        posterior = ami.sample_posterior(n_repeats=1)  # thompson sampling
+        posterior = model.sample_posterior(n_repeats=1)  # thompson sampling
         a = alpha.thompson(posterior)
         ipick = utilities.select_max_alpha(untested=untested, alpha=a)
 

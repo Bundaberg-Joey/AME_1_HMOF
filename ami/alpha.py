@@ -30,6 +30,8 @@ def random(num_dataset_entries):
     alpha : np.array(), shape(num_dataset_entries, )
         Randomised posterior means, one value per dataset entry
     """
+    _checks.pos_int(num_dataset_entries)
+
     alpha = np.random.randn(num_dataset_entries)
     return alpha
 
@@ -52,6 +54,9 @@ def thompson(posterior):
     alpha : np.array(), shape(num_database_entries, 1)
         Posterior means of each entry in the dataset.
     """
+    _checks.array_not_empty(posterior)
+    _checks.nan_present(posterior)
+
     alpha = posterior
     return alpha
 
@@ -59,7 +64,7 @@ def thompson(posterior):
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def greedy_n(posterior, n, incremement=1):
+def greedy_n(posterior, n):
     """Greedy N sampling determines the alpha values by the frequency that they appear in the top `n` points.
     The posterior is sampled `n` times so that each data point has `n` associated posterior values.
     Each time that a datapoint has an entry in the top `n`, the alpha values increase by one `increment`.
@@ -76,20 +81,20 @@ def greedy_n(posterior, n, incremement=1):
         The number of data points which the greedy `n` algorithm is attempting to optimise for.
         i.e. if `n` = 100, calculates the number of times each data point appears in the top 100.
 
-    incremement: int (default = 1)
-        The value to increase the data point's presence in the top `n` by if found present in top `n`.
-        As the value itself is arbitrary, the option to alter it is included to prevent hardcoding.
-
     Returns
     -------
     alpha : np.array(), shape(num_dataset_entries, )
         Array containing the counts for each datapoint that it appeard in the top `n` data points in the dataset.
         If a value is not present in the top `n` then it will have a default value of 0.
     """
+    _checks.array_not_empty(posterior)
+    _checks.nan_present(posterior)
+    _checks.pos_int(n)
+
     a, b = posterior.shape
     alpha = np.zeros(a)
     for j in range(b):
-        alpha[np.argpartition(posterior[:, j], -n)[-n:]] += incremement
+        alpha[np.argpartition(posterior[:, j], -n)[-n:]] += 1  # increment count by 1
     return alpha
 
 
@@ -124,6 +129,10 @@ def expected_improvement(mu_pred, var_pred, y_max):
     alpha : np.array(num_dataset_entries, )
         Array of expected improvement alpha values for each entry in the dataset.
     """
+    _checks.array_not_empty(mu_pred, var_pred)
+    _checks.nan_present(mu_pred, var_pred)
+    _checks.any_float(y_max)
+
     sig_pred = np.sqrt(var_pred)
     improvement = mu_pred - y_max
     scaled_mu = np.divide(improvement, sig_pred)
@@ -163,6 +172,10 @@ def greedy_tau(mu_pred, var_pred, tau):
     alpha : np.array(num_dataset_entries, )
         Associated probabilities of each data point to surpass the threshold (`tau`) value.
     """
+    _checks.array_not_empty(mu_pred, var_pred)
+    _checks.nan_present(mu_pred, var_pred)
+    _checks.any_float(tau)
+
     sig_pred = np.sqrt(var_pred)
     thresh_scaled = np.divide(tau - mu_pred, sig_pred)
     alpha = 1 - norm.cdf(thresh_scaled)

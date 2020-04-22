@@ -127,6 +127,9 @@ class Prospector(object):
                 * `cluster_centers_` --> np.array(), shape(num_entries, num_features)
 
         """
+        checks.array_not_empty(X)
+        checks.nan_present(X)
+
         self.X = X
         self.cluster_func = cluster_func
         self.n, self.d = X.shape
@@ -252,6 +255,9 @@ class Prospector(object):
             Updates numerous attribues concerned with model parameters, covariance matrices and inducing points.
         """
         untested, train, ytrain = np.array(untested), np.array(train), np.array(ytrain)
+        checks.array_not_empty(untested, train, ytrain)
+        checks.nan_present(untested, train, ytrain)
+
         self._update_hyperparameters(train, ytrain)
         self._select_inducing_points(untested, train)
         self._determine_prior_covariance_matrices()
@@ -278,6 +284,9 @@ class Prospector(object):
         None :
             Updates attributes {`self.SIG_MM_pos`, `self.SIG_M_pos`}
         """
+        checks.array_not_empty(ytested, tested)
+        checks.nan_present(ytested, tested)
+
         K = np.matmul(self.SIG_XM[tested].T, np.divide(self.SIG_XM[tested], self.B[tested].reshape(-1, 1)))
         self.SIG_MM_pos = self.SIG_MM - K + np.matmul(K, np.linalg.solve(K + self.SIG_MM, K))
         J = np.matmul(self.SIG_XM[tested].T, np.divide(ytested - self.mu, self.B[tested]))
@@ -319,6 +328,8 @@ class Prospector(object):
         samples_X_pos : np.array(), shape(num_dataset_entries, n_repeats)
             Matrix whose columns are independent samples of the posterior over the full dataset
         """
+        checks.pos_int(n_repeats)
+
         samples_M_pos = np.random.multivariate_normal(self.mu_M_pos, self.SIG_MM_pos, n_repeats).T
         samples_X_pos = self.mu + np.matmul(self.SIG_XM, np.linalg.solve(self.SIG_MM, samples_M_pos - self.mu))
         return samples_X_pos
@@ -329,7 +340,10 @@ class Prospector(object):
 
     @ntopmu.setter
     def ntopmu(self, value):
-        self._ntopmu = checks.pos_int(value)
+        """Set value to positive integer. Raise error if incorrect argument type.
+        """
+        checks.pos_int(value)
+        self._ntopmu = value
 
     @property
     def ntopvar(self):
@@ -337,7 +351,10 @@ class Prospector(object):
 
     @ntopvar.setter
     def ntopvar(self, value):
-        self._ntopvar = checks.pos_int(value)
+        """Set value to positive integer. Raise error if incorrect argument type.
+        """
+        checks.pos_int(value)
+        self._ntopvar = value
 
     @property
     def n_points_to_cluster(self):
@@ -345,7 +362,10 @@ class Prospector(object):
 
     @n_points_to_cluster.setter
     def n_points_to_cluster(self, value):
-        self._n_points_to_cluster = checks.pos_int(value)
+        """Set value to positive integer. Raise error if incorrect argument type.
+        """
+        checks.pos_int(value)
+        self._n_points_to_cluster = value
 
     @property
     def lam(self):
@@ -353,7 +373,10 @@ class Prospector(object):
 
     @lam.setter
     def lam(self, value):
-        self._lam = checks.any_float(value)
+        """Set value to float. Raise error if incorrect argument type.
+        """
+        checks.any_float(value)
+        self._lam = value
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -389,7 +412,8 @@ class FrugalTrainer(object):
     """
 
     def __init__(self, nmax=400, ntop=100, nrecent=100):
-        """
+        """Confirms input variables and raises error if incorrect type or sign.
+
         Parameters
         ----------
         nmax : int
@@ -401,6 +425,8 @@ class FrugalTrainer(object):
         nrecent : int
             The `n` most recently sampled data points to include in training data.
         """
+        checks.pos_int(nmax, ntop, nrecent)
+
         self.nmax = nmax
         self.ntop = ntop
         self.nrecent = nrecent
@@ -423,6 +449,8 @@ class FrugalTrainer(object):
             Indices of data points to use and their emperical target values.
             The size of the arrays are dependant on the conditional size.
         """
+        checks.array_not_empty(tested_indices, test_results)
+        checks.nan_present(tested_indices, test_results)
 
         tested_indices = np.array(tested_indices)
         y_tested = np.array(test_results)

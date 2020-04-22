@@ -111,6 +111,7 @@ def array_not_empty(*args):
     my_array.size --> 0
 
     This results in known limitation of non array / list types not raising an error.
+    This also does not guard against partially empty arrays / lists (i.e. empty rows or columns)
 
     Parameters
     ----------

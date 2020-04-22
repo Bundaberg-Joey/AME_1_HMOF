@@ -64,7 +64,7 @@ def nan_present(*args):
             raise ValueError('Nan values must not be present in array')
 
 
-def array_empty(*args):
+def array_not_empty(*args):
     """Checks if passed numpy array(s) are empty or not.
     Raises `ValueError` if empty.
 

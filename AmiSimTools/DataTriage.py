@@ -44,7 +44,7 @@ class DataTriage(object):
             Target values.
         """
         X, y = np.array(X), np.array(y)
-        checks.array_empty(X, y)
+        checks.array_not_empty(X, y)
         checks.nan_present(X, y)
 
         if len(X) != len(y):

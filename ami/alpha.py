@@ -131,7 +131,7 @@ def expected_improvement(mu_pred, var_pred, y_max):
     """
     _checks.array_not_empty(mu_pred, var_pred)
     _checks.nan_present(mu_pred, var_pred)
-    _checks.any_float(y_max)
+    _checks.any_numeric(y_max)
 
     sig_pred = np.sqrt(var_pred)
     improvement = mu_pred - y_max

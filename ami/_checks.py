@@ -45,6 +45,26 @@ def any_float(*args):
             raise TypeError('Value must be a float')
 
 
+def any_numeric(*args):
+    """checks if valus is float or int.
+    Otherwise raises relevant error.
+
+    Parameters
+    ----------
+    args : iterable
+         Numeric or other user input.
+
+    Returns
+    -------
+    None
+    """
+    for a in args:
+        if isinstance(a, float) or isinstance(a, int):
+            pass
+        else:
+            raise TypeError('Value must be a float')
+
+
 def nan_present(*args):
     """Checks for the presence of `Nan` values in numpy arrays.
     Raises `ValueError` is present.

@@ -164,7 +164,7 @@ def greedy_tau(mu_pred, var_pred, tau):
         Predicted variance of all entries in the dataset.
         Can be acquired through calling `ami.predict()`.
 
-    tau : float
+    tau : float / int
         The threshold value for a data point to belong to the top `n` target values.
 
 
@@ -176,7 +176,7 @@ def greedy_tau(mu_pred, var_pred, tau):
     _checks.same_shape((mu_pred, var_pred))
     _checks.array_not_empty(mu_pred, var_pred)
     _checks.nan_present(mu_pred, var_pred)
-    _checks.any_float(tau)
+    _checks.any_numeric(tau)
 
     sig_pred = np.sqrt(var_pred)
     thresh_scaled = np.divide(tau - mu_pred, sig_pred)

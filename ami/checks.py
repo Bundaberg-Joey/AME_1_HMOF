@@ -6,44 +6,43 @@ Used for setters, etc.
 
 import numpy as np
 
-def pos_int(value):
+
+def pos_int(*args):
     """checks if valus is positive integer and returns if true.
     Otherwise raises relevant error.
 
     Parameters
     ----------
-    value : int
-        positive integer or other user input.
+    args : iterable
+        Positive integer or other user input.
 
     Returns
     -------
-    value : int
-        Value provided by user.
+    None
     """
-    if not isinstance(value, int):
-        raise TypeError('Value must be an integer')
-    if value <= 0:
-        raise ValueError('Value must be positive')
-    return value
+    for a in args:
+        if not isinstance(a, int):
+            raise TypeError('Value must be an integer')
+        if a <= 0:
+            raise ValueError('Value must be positive')
 
 
-def any_float(value):
+def any_float(*args):
     """checks if valus is float and returns if true.
     Otherwise raises relevant error.
 
     Parameters
     ----------
-    value : float
+    args : iterable
         Float or other user input.
 
     Returns
     -------
-    value : int
-        Value provided by user.
+    None
     """
-    if not isinstance(value, float):
-        raise TypeError('Value must be a float')
-    return value
+    for a in args:
+        if not isinstance(a, float):
+            raise TypeError('Value must be a float')
 
 
 def nan_present(*args):
@@ -52,7 +51,8 @@ def nan_present(*args):
 
     Parameters
     ----------
-    args : np.array(), shape(num_entries, num_features)
+    args : iterable
+        np.array(), shape(num_entries, num_features)
         Array(s) to check for presence of nan
 
     Returns
@@ -70,7 +70,8 @@ def array_empty(*args):
 
     Parameters
     ----------
-    args : np.array(), shape(num_entries, num_features)
+    args : iterable
+        np.array(), shape(num_entries, num_features)
         Array(s) to check for presence of nan
 
     Returns

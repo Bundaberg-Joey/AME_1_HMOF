@@ -129,6 +129,7 @@ def expected_improvement(mu_pred, var_pred, y_max):
     alpha : np.array(num_dataset_entries, )
         Array of expected improvement alpha values for each entry in the dataset.
     """
+    _checks.same_shape((mu_pred, var_pred))
     _checks.array_not_empty(mu_pred, var_pred)
     _checks.nan_present(mu_pred, var_pred)
     _checks.any_numeric(y_max)
@@ -172,6 +173,7 @@ def greedy_tau(mu_pred, var_pred, tau):
     alpha : np.array(num_dataset_entries, )
         Associated probabilities of each data point to surpass the threshold (`tau`) value.
     """
+    _checks.same_shape((mu_pred, var_pred))
     _checks.array_not_empty(mu_pred, var_pred)
     _checks.nan_present(mu_pred, var_pred)
     _checks.any_float(tau)

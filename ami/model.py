@@ -16,7 +16,7 @@ from GPy.mappings import Constant
 from GPy.kern import RBF
 from GPy.models import GPRegression
 
-from ami import checks
+from ami import _checks
 
 
 class Prospector(object):
@@ -127,8 +127,8 @@ class Prospector(object):
                 * `cluster_centers_` --> np.array(), shape(num_entries, num_features)
 
         """
-        checks.array_not_empty(X)
-        checks.nan_present(X)
+        _checks.array_not_empty(X)
+        _checks.nan_present(X)
 
         self.X = X
         self.cluster_func = cluster_func
@@ -255,8 +255,8 @@ class Prospector(object):
             Updates numerous attribues concerned with model parameters, covariance matrices and inducing points.
         """
         untested, train, ytrain = np.array(untested), np.array(train), np.array(ytrain)
-        checks.array_not_empty(untested, train, ytrain)
-        checks.nan_present(untested, train, ytrain)
+        _checks.array_not_empty(untested, train, ytrain)
+        _checks.nan_present(untested, train, ytrain)
 
         self._update_hyperparameters(train, ytrain)
         self._select_inducing_points(untested, train)
@@ -284,8 +284,8 @@ class Prospector(object):
         None :
             Updates attributes {`self.SIG_MM_pos`, `self.SIG_M_pos`}
         """
-        checks.array_not_empty(ytested, tested)
-        checks.nan_present(ytested, tested)
+        _checks.array_not_empty(ytested, tested)
+        _checks.nan_present(ytested, tested)
 
         K = np.matmul(self.SIG_XM[tested].T, np.divide(self.SIG_XM[tested], self.B[tested].reshape(-1, 1)))
         self.SIG_MM_pos = self.SIG_MM - K + np.matmul(K, np.linalg.solve(K + self.SIG_MM, K))
@@ -328,7 +328,7 @@ class Prospector(object):
         samples_X_pos : np.array(), shape(num_dataset_entries, n_repeats)
             Matrix whose columns are independent samples of the posterior over the full dataset
         """
-        checks.pos_int(n_repeats)
+        _checks.pos_int(n_repeats)
 
         samples_M_pos = np.random.multivariate_normal(self.mu_M_pos, self.SIG_MM_pos, n_repeats).T
         samples_X_pos = self.mu + np.matmul(self.SIG_XM, np.linalg.solve(self.SIG_MM, samples_M_pos - self.mu))
@@ -342,7 +342,7 @@ class Prospector(object):
     def ntopmu(self, value):
         """Set value to positive integer. Raise error if incorrect argument type.
         """
-        checks.pos_int(value)
+        _checks.pos_int(value)
         self._ntopmu = value
 
     @property
@@ -353,7 +353,7 @@ class Prospector(object):
     def ntopvar(self, value):
         """Set value to positive integer. Raise error if incorrect argument type.
         """
-        checks.pos_int(value)
+        _checks.pos_int(value)
         self._ntopvar = value
 
     @property
@@ -364,7 +364,7 @@ class Prospector(object):
     def n_points_to_cluster(self, value):
         """Set value to positive integer. Raise error if incorrect argument type.
         """
-        checks.pos_int(value)
+        _checks.pos_int(value)
         self._n_points_to_cluster = value
 
     @property
@@ -375,7 +375,7 @@ class Prospector(object):
     def lam(self, value):
         """Set value to float. Raise error if incorrect argument type.
         """
-        checks.any_float(value)
+        _checks.any_float(value)
         self._lam = value
 
 
@@ -425,7 +425,7 @@ class FrugalTrainer(object):
         nrecent : int
             The `n` most recently sampled data points to include in training data.
         """
-        checks.pos_int(nmax, ntop, nrecent)
+        _checks.pos_int(nmax, ntop, nrecent)
 
         self.nmax = nmax
         self.ntop = ntop
@@ -449,8 +449,8 @@ class FrugalTrainer(object):
             Indices of data points to use and their emperical target values.
             The size of the arrays are dependant on the conditional size.
         """
-        checks.array_not_empty(tested_indices, test_results)
-        checks.nan_present(tested_indices, test_results)
+        _checks.array_not_empty(tested_indices, test_results)
+        _checks.nan_present(tested_indices, test_results)
 
         tested_indices = np.array(tested_indices)
         y_tested = np.array(test_results)

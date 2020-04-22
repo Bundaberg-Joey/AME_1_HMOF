@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from scipy.io import loadmat
 
-from ami import checks
+from ami import _checks
 
 
 class DataTriage(object):
@@ -44,8 +44,8 @@ class DataTriage(object):
             Target values.
         """
         X, y = np.array(X), np.array(y)
-        checks.array_not_empty(X, y)
-        checks.nan_present(X, y)
+        _checks.array_not_empty(X, y)
+        _checks.nan_present(X, y)
 
         if len(X) != len(y):
             raise ValueError('Lengths of feature and target array do not match')

@@ -2,4 +2,4 @@
 import pytest
 import numpy as np
 
-from ami import checks
+from ami import _checks

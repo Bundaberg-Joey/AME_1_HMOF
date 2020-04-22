@@ -53,7 +53,7 @@ if __name__ == '__main__':
 
         posterior = model.sample_posterior(n_repeats=1)  # thompson sampling
         a = alpha.thompson(posterior)
-        ipick = utilities.select_max_alpha(untested=untested, alpha=a)
+        ipick = alpha.select_max_alpha(untested=untested, alpha=a)
 
         y_exp[ipick] = y_true[ipick]  # update experimental value with true value
         status.update(ipick, 2)

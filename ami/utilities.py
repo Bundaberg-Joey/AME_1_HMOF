@@ -8,6 +8,8 @@ Currently included are:
 
 import numpy as np
 
+from ami import _checks
+
 
 class Status(object):
     """Object for tracking which experiments have been conducted on each data point.
@@ -123,6 +125,9 @@ def select_max_alpha(untested, alpha):
     ipick : int
         Integer index of the data point to be selected from the original data set.
     """
+    _checks.array_not_empty(untested, alpha)
+    _checks.nan_present(untested, alpha)
+
     max_untested_alpha = np.argmax(alpha[untested])
     pick = untested[max_untested_alpha]
     return pick
@@ -156,6 +161,10 @@ def estimate_tau(posterior, n):
     tau : float
         The median of the `n`th top data points from the sampled posterior.
     """
+    _checks.array_not_empty(posterior)
+    _checks.nan_present(posterior)
+    _checks.pos_int(n)
+
     a, b = posterior.shape
 
     taus = np.zeros(b)

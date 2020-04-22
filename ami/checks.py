@@ -68,6 +68,16 @@ def array_empty(*args):
     """Checks if passed numpy array(s) are empty or not.
     Raises `ValueError` if empty.
 
+    Notes
+    -----
+    Numpy array `.size` attribute is used instead of length to handle instances
+    of nested empty lists i.e.:
+
+    my_list = [[], [], []]
+    my_array = np.array(my_list)
+    len(my_list) --> 3
+    my_array.size --> 0
+
     Parameters
     ----------
     args : iterable
@@ -79,5 +89,10 @@ def array_empty(*args):
     None
     """
     for a in args:
-        if a.size == 0:
-            raise ValueError('Array is empty')
+        try:
+            a = np.array(a)
+            if a.size == 0:
+                raise ValueError('Array is empty')
+        except:
+            raise ValueError('Input could not be converted to array')
+            # bare exception used here incase value can't be array which should crash anyway.

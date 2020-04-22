@@ -110,6 +110,8 @@ def array_not_empty(*args):
     len(my_list) --> 3
     my_array.size --> 0
 
+    This results in known limitation of non array / list types not raising an error.
+
     Parameters
     ----------
     args : iterable

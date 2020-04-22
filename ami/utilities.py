@@ -87,7 +87,7 @@ class Status(object):
             List of indices which do not match the `default` value
         """
         tested = np.where(self.state != self.start)[0]
-        return list(tested)
+        return tested
 
     def untested(self):
         """Provides indices of entries which have not been tested.
@@ -99,7 +99,7 @@ class Status(object):
             List of indices which match the `default` value
         """
         untested = np.where(self.state == self.start)[0]
-        return list(untested)
+        return untested
 
 
 # ----------------------------------------------------------------------------------------------------------------------

@@ -27,6 +27,9 @@ def pos_int(*args):
             raise ValueError('Value must be positive')
 
 
+# ----------------------------------------------------------------------------------------------------------------------
+
+
 def any_float(*args):
     """checks if valus is float and returns if true.
     Otherwise raises relevant error.
@@ -43,6 +46,9 @@ def any_float(*args):
     for a in args:
         if not isinstance(a, float):
             raise TypeError('Value must be a float')
+
+
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def any_numeric(*args):
@@ -65,6 +71,9 @@ def any_numeric(*args):
             raise TypeError('Value must be a float')
 
 
+# ----------------------------------------------------------------------------------------------------------------------
+
+
 def nan_present(*args):
     """Checks for the presence of `Nan` values in numpy arrays.
     Raises `ValueError` is present.
@@ -82,6 +91,9 @@ def nan_present(*args):
     for a in args:
         if np.isnan(a).sum() > 0:
             raise ValueError('Nan values must not be present in array')
+
+
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def array_not_empty(*args):
@@ -116,3 +128,28 @@ def array_not_empty(*args):
         except:
             raise ValueError('Input could not be converted to array')
             # bare exception used here incase value can't be array which should crash anyway.
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def same_shape(arrays):
+    """Checks if passes arrays / lists / objects are the same shape.
+
+    Notes
+    -----
+    Only really valid for lists or arrays since dictionaries will return shape() and other
+    objects will have shape (1, )
+
+    Parameters
+    ----------
+    arrays : iterable
+        List or Array or tuple of objects to compare lengths of.
+
+    Returns
+    -------
+    None
+    """
+    shapes = set((np.array(a).shape for a in arrays))
+    if len(shapes) > 1:
+        raise ValueError('Length mismatch, arrays do not have same shape')

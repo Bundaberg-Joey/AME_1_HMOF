@@ -7,7 +7,7 @@ import numpy as np
 from AmiSimTools.DataTriage import DataTriageCSV
 
 from ami.model import Prospector, FrugalTrainer
-from ami import alpha, utilities
+from ami import alpha, simtools
 
 
 if __name__ == '__main__':
@@ -19,14 +19,16 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--data_file', action='store', default=data_location, help='path to data file')
     parser.add_argument('-i', '--initial_samples', action='store', type=int, default=50, help='# of random samples AMI takes')
     parser.add_argument('-m', '--max_iterations', action='store', type=int, default=120, help='# of materials AMI will sample')
+    parser.add_argument('-n', '--top_n', action='store', type=int, default=100, help='# of top materials to benchmark')
     args = parser.parse_args()
 
     n_tested = args.initial_samples
 
     # setting up -------------------------------------------------------------------------------------------------------
     data = DataTriageCSV.load_from_path(args.data_file)
-    X, y_true, y_exp, top_100 = data.X, data.y_true, data.y_experimental, data.top_100  # unpack
-    status = utilities.Status(len(X), 0)
+    X, y_true, y_exp = data.X, data.y_true, data.y_experimental  # unpack
+    rate_eval = simtools.Evaluator(y_true, args.top_n)
+    status = simtools.Status(len(X), 0)
 
     # update status and experimental arrays with random samples
     random_samples = np.random.choice(len(y_true), n_tested, replace=False)
@@ -59,7 +61,7 @@ if __name__ == '__main__':
         status.update(ipick, 2)
 
         sampled = status.tested()
-        top_sampled = sum((1 for i in sampled if i in top_100))
-        print(F'({n_tested}/{args.max_iterations}) : {top_sampled} of top 100 sampled')
+        top_sampled = rate_eval.top_found_count(sampled)
+        print(F'({n_tested}/{args.max_iterations}) : {top_sampled} of top {rate_eval.n} sampled')
 
         n_tested += 1

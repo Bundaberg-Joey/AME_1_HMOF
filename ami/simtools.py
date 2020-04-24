@@ -53,6 +53,8 @@ class Status(object):
             Value used to denote the starting state of all entries.
             Used to check for (non)tested entries in `tested` and `untested` methods.
         """
+        _checks.pos_int(num)
+
         self.num = num
         self.start = start
         self.state = np.full(self.num, self.start)

@@ -37,9 +37,8 @@ class Status(object):
 
     Notes
     -----
-    To allow flexibility, users can update the contents of status to be whatever they wish.
-    This includes the intialisation value to prevent constraining the user.
-    It is advised however that the user adheres to their own set up as none will be enforced here.
+    Status object uses numpy arrays which require all entries to be the same type.
+    Therefore label used should match the type of label used at initialisation.
     """
 
     def __init__(self, num, start=0):
@@ -64,10 +63,16 @@ class Status(object):
         """Update the label of a particular experiment.
         Order of update is conserved in log.
 
+        Notes
+        -----
+        Status object uses numpy arrays which require all entries to be the same type.
+        Therefore label used should match the type of label used at initialisation.
+
         Parameters
         ----------
-        identifier : int
-            The index of the data point to be updated
+        identifier : int OR list of int
+            The index(es) of the data point(s) to be updated.
+            Note if multiple data points are updated simultaneously then this is reflected in the log.
 
         label : {str, int, float}
             Any label which the user wishes to use to update an experiment with
@@ -172,11 +177,12 @@ class Evaluator(object):
 
         Returns
         -------
-        found : list, shape(num_matches, )
+        are_top : np.array(), shape(num_matches, )
             Values which are present in user input and `top_n`
         """
-        found = [i for i in found if i in self.top_n]
-        return found
+        found = np.asarray(found)
+        are_top = found[np.isin(found, self.top_n)]
+        return are_top
 
     def invert_top(self):
         """Sets `top_n` to be the indices of the lowest `n` target values.

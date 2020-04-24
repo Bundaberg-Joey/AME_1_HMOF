@@ -156,3 +156,26 @@ def same_shape(arrays):
     shapes = set((np.array(a).shape for a in arrays))
     if len(shapes) > 1:
         raise ValueError('Length mismatch, arrays do not have same shape')
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def same_type(comparison_type, *args):
+    """Checks if values are all of desired type.
+
+    Parameters
+    ----------
+    comparison_type : type
+        Type which args are compared against.
+
+    args : iterable
+        Arguments user is comparing.
+
+    Returns
+    -------
+    None
+    """
+    for a in args:
+        if not isinstance(a, comparison_type):
+            raise TypeError(F'Passed arg must be type {comparison_type} but type {type(a)} was passed.')

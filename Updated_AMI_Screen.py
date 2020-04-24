@@ -4,10 +4,9 @@ import argparse
 
 import numpy as np
 
-from AmiSimTools.DataTriage import DataTriageCSV
-
-from ami.model import Prospector, FrugalTrainer
 from ami import alpha, simtools
+from ami.model import Prospector, FrugalTrainer
+from ami.data import DataTriageCSV
 
 
 if __name__ == '__main__':

@@ -26,6 +26,7 @@ if __name__ == '__main__':
     # setting up -------------------------------------------------------------------------------------------------------
     data = DataTriageCSV.load_from_path(args.data_file)
     X, y_true, y_exp = data.X, data.y_true, data.y_experimental  # unpack
+
     rate_eval = simtools.Evaluator(y_true, args.top_n)
     status = simtools.Status(len(X), 0)
 

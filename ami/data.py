@@ -154,3 +154,27 @@ class DataTriageMatlab(DataTriage):
         data_set = loadmat(path, appendmat=False)
         features, targets = data_set['X'], data_set['y'].ravel()  # ravel due to loading as column vector
         return features, targets
+
+
+class DataTriagePickle(DataTriage):
+    """
+    Child class which allows for the loading of data from a pickle file
+    """
+    @staticmethod
+    def _load_dataset_from_path(path):
+        """Loads data from pickle file, assumed that feature matrix is located at `X` and target values at `y`.
+
+        Parameters
+        ----------
+        path : str
+            Path to pickle file.
+
+        Returns
+        -------
+        (X, y) : (np.array(), np.array(), shape((num_entries, nun_features), (num_entries, ))
+            Feature and target value arrays.
+        """
+        with open(path, 'rb') as f:
+            data_set = pickle.load(f)
+        features, targets = data_set['X'], data_set['y']
+        return features, targets

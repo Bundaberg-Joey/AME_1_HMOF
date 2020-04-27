@@ -139,6 +139,8 @@ class Evaluator(object):
 
     Notes
     -----
+    Determinatin of the top found will not consider the presence of duplicates in either user input or top_n.
+
     Updating the value of `n` with either the attribute or setter will also update the `top_n` attribute accordingly.
     By defulat however, it will return the indices of the target values with the highest scores.
     Therefore user will have to call `invert_top` if updating lowest `n`.
@@ -170,10 +172,6 @@ class Evaluator(object):
         found : list, np.array(), shape(user_inpit, )
             Indices which the user are coparing.
             Can be any length so long is flat list / array.
-
-        Notes
-        -----
-        Duplicate values will be present multiple times in output.
 
         Returns
         -------

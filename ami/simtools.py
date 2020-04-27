@@ -14,9 +14,6 @@ class Status(object):
 
     Attributes
     ----------
-    num : int
-        Number of entries to create a status for.
-
     start : {str, int, float} (default = 0)
         Value used to denote the starting state of all entries.
         Used to check for (non)tested entries in `tested` and `untested` methods.
@@ -28,17 +25,24 @@ class Status(object):
     changelog : list[(identifier, label)]
         List containing log of materials updated and the label updated to.
 
-
     Methods
     -------
     update(self, identifier, label) --> updates `self.state`
     tested(self) --> returns array of tested data points
     untested(self) --> returns array of untested data points
+    get_status(self) --> returns satus array
+    get_changelog(self) --> returns list of chronological updates to status
+    len --> length of status array
 
     Notes
     -----
     Status object uses numpy arrays which require all entries to be the same type.
     Therefore label used should match the type of label used at initialisation.
+    This is particularly important if storing status updates as strings as they must all be the same or less length.
+    >> status = Status(3, start='a')
+    >> status.update(0, 'bcd')
+    >> status.get_status()
+        np.array(['b', 'a', 'a'])
     """
 
     def __init__(self, num, start=0):
@@ -54,28 +58,29 @@ class Status(object):
         """
         _checks.pos_int(num)
 
-        self.num = num
         self.start = start
-        self.state = np.full(self.num, self.start)
+        self.state = np.full(num, self.start)
         self.changelog = []
 
     def update(self, identifier, label):
         """Update the label of a particular experiment.
         Order of update is conserved in log.
+        The allowed update type can be viewed using `allowed_update_type(self)`
 
         Notes
         -----
         Status object uses numpy arrays which require all entries to be the same type.
         Therefore label used should match the type of label used at initialisation.
+        When using strings, this means all strings should be same length, max length will be initial string length.
 
         Parameters
         ----------
-        identifier : int OR list of int
-            The index(es) of the data point(s) to be updated.
-            Note if multiple data points are updated simultaneously then this is reflected in the log.
+        identifier : int
+            The index of the status entries to be updated.
 
-        label : {str, int, float}
-            Any label which the user wishes to use to update an experiment with
+        label : self.state.dtype
+            Label being used to indicate update in status.
+            Type must match that of numpy array otherwise entries could be shortened.
 
         Returns
         -------
@@ -107,6 +112,45 @@ class Status(object):
         """
         untested = np.where(self.state == self.start)[0]
         return untested
+
+    def allowed_update_type(self):
+        """Type of array used to store the status.
+
+        Returns
+        -------
+        `state.dtype` : numpy.dtype
+            Type of data it is reccomended user update the status with.
+        """
+        return self.state.dtype
+
+    def get_status(self):
+        """Provides user with status.
+
+        Returns
+        -------
+        `self.state` : np.array(), shape(num_entries, )
+            Status array tracking experiments.
+        """
+        return self.state
+
+    def get_changelog(self):
+        """Record of all updates made to the Status object, stored in chronological order.
+
+        Returns
+        -------
+        `changelog` : list, shape(num_updates, )
+            List of tuples (index, update) appended in chronological order
+        """
+        return self.changelog
+
+    def __len__(self):
+        """
+        Returns
+        -------
+        length : int
+            Length of status array.
+        """
+        return len(self.state)
 
 
 # ----------------------------------------------------------------------------------------------------------------------

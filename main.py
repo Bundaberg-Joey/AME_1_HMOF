@@ -27,7 +27,7 @@ if __name__ == '__main__':
     data = DataTriageCSV.load_from_path(args.data_file)
     X, y_true, y_exp = data.X, data.y_true, data.y_experimental  # unpack
 
-    rate_eval = simtools.Evaluator(y_true, args.top_n)
+    rate_eval = simtools.Evaluator.from_unordered(y_true, args.top_n)
     status = simtools.Status(len(X), 0)
 
     # update status and experimental arrays with random samples
@@ -62,6 +62,6 @@ if __name__ == '__main__':
 
         sampled = status.tested()
         top_sampled = rate_eval.top_found_count(sampled)
-        print(F'({n_tested}/{args.max_iterations}) : {top_sampled} of top {rate_eval.n} sampled')
+        print(F'({n_tested}/{args.max_iterations}) : {top_sampled} of top {len(rate_eval)} sampled')
 
         n_tested += 1

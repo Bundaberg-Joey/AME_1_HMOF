@@ -2,6 +2,7 @@
 Contains classes used to help the loading and preprocessing of data for screening.
 Data can be processed straight from numpy arrays OR through provision of a csv file / mat lab file path.
 """
+import pickle
 
 import numpy as np
 import pandas as pd
@@ -40,7 +41,11 @@ class DataTriage(object):
         y : np.array(), shape(num_entries, )
             Target values.
         """
-        X, y = np.array(X), np.array(y)
+        try:
+            X, y = np.array(X).astype(float), np.array(y).astype(float)
+        except:
+            raise ValueError('Unable to convert target and feature data to float.')
+
         _checks.array_not_empty(X, y)
         _checks.nan_present(X, y)
 
@@ -147,5 +152,5 @@ class DataTriageMatlab(DataTriage):
             Feature and target value arrays.
         """
         data_set = loadmat(path, appendmat=False)
-        features, targets = data_set['X'], data_set['y']
+        features, targets = data_set['X'], data_set['y'].ravel()  # ravel due to loading as column vector
         return features, targets

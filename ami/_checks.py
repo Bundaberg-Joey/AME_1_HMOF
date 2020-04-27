@@ -179,3 +179,12 @@ def same_type(comparison_type, *args):
     for a in args:
         if not isinstance(a, comparison_type):
             raise TypeError(F'Passed arg must be type {comparison_type} but type {type(a)} was passed.')
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def boolean(*args):
+    for a in args:
+        if not isinstance(a, bool):
+            raise ValueError(F'Passed arg must be type {bool} but type {type(a)} was passed.')

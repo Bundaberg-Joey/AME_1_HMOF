@@ -93,3 +93,15 @@ def test_sameshape_fail():
 
 
 # ----------------------------------------------------------------------------------------------------------------------
+def test_boolean_pass():
+    _checks.boolean(True)
+    _checks.boolean(False)
+    _checks.boolean(True, False, True)
+
+
+@pytest.mark.xfail(reason='Invalid, inputs')
+def test_boolean_fail():
+    _checks.boolean(1)
+    _checks.boolean(0)
+    _checks.boolean(1, 0, 1)
+    _checks.boolean(1.0, 0.0)

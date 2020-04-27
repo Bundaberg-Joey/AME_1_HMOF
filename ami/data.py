@@ -122,8 +122,10 @@ class DataTriageCSV(DataTriage):
             Feature and target value arrays.
         """
         data = pd.read_csv(path, dtype='float').to_numpy()
-        X, y = data[:, :-1], data[:, -1]
-        return X, y
+        assert data.shape[1] > 1, 'Only one Column present in loaded dataset. X and y must be separate.'
+        # check for empty data is performed at initialisation so not duplicating here.
+        features, targets = data[:, :-1], data[:, -1]
+        return features, targets
 
 
 class DataTriageMatlab(DataTriage):

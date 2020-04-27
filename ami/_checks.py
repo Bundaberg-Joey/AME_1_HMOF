@@ -185,6 +185,17 @@ def same_type(comparison_type, *args):
 
 
 def boolean(*args):
+    """Checks if values are bool True or False and raises error if not.
+
+    Parameters
+    ----------
+    args : iterable
+        Bool or other user inputs.
+
+    Returns
+    -------
+    None
+    """
     for a in args:
         if not isinstance(a, bool):
             raise ValueError(F'Passed arg must be type {bool} but type {type(a)} was passed.')

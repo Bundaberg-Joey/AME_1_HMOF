@@ -189,7 +189,7 @@ class Evaluator(object):
      if it exists **anywhere** within the passed 2D `found` grid i.e.
      >> top = [1, 3]
      >> ev = Evaluator(top)
-     >> found = np.array([[1, 5, 6, 7], [3, 1, 20, 10])
+     >> found = np.array([[1, 5, 6, 7], [3, 1, 20, 10]])
      >> ev.top_found_id(found)
         np.array([1, 3])
     """
@@ -204,7 +204,8 @@ class Evaluator(object):
         """
         _checks.array_not_empty(top_n)
         _checks.nan_present(top_n)
-        self._top_n = top_n
+
+        self._top_n = np.asarray(top_n)
 
     @classmethod
     def from_unordered(cls, y, n=100, inverted=False):
@@ -257,8 +258,7 @@ class Evaluator(object):
         are_top : np.array(), shape(num_matches, )
             Values which are present in user input and `top_n`.
         """
-        found = np.asarray(found)
-        are_top = found[np.isin(found, self._top_n)]
+        are_top = self._top_n[np.isin(self._top_n, found)]
         return are_top
 
     def top_found_count(self, found):

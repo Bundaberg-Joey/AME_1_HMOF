@@ -3,6 +3,7 @@ Contains utility functions and classes for ami investigations.
 Currently included are:
 * Status
 """
+import warnings
 
 import numpy as np
 
@@ -231,6 +232,9 @@ class Evaluator(object):
         _checks.array_not_empty(y)
         _checks.nan_present(y)
         _checks.boolean(inverted)
+
+        if n > len(y):
+            warnings.warn(F'Specified argument `n` {n} is greater than pased array length {len(y)}', Warning)
 
         y_sorted = np.argsort(y)
         if not inverted:

@@ -292,7 +292,7 @@ class Prospector(object):
         J = np.matmul(self.SIG_XM[tested].T, np.divide(ytested - self.mu, self.B[tested]))
         self.mu_M_pos = self.mu + J - np.matmul(K, np.linalg.solve(K + self.SIG_MM, J))
 
-    def predict(self):
+    def predict(self, return_variance=True):
         """Calculates the predicted mean and predicted variance of the full dataset.
         This utilises the covarince matrices of the prior `self.SIG_MM` and posterior `self.SIG_XM` distributions.
         For calculting the predicted mean of the posterior, a mean shifted process is used to facilite more reliable
@@ -300,19 +300,32 @@ class Prospector(object):
         mean would be based on a sample of the original dataset which would depend on the sampling conducted and likely
         not be representative.
 
+        Parameters
+        ----------
+        return_variance : bool (default = True)
+            If True then variance will calculated and returned with mean.
+            Else only mean will be calculated and returned.
+
         Returns
         -------
         mu_X_pos : np.array(), shape(num_entries, )
             The predicted means of each point in the dataset.
 
-        var_X_pos : np.array(), shape(num_entries, )
+        var_X_pos : np.array(), shape(num_entries, ) (conditionally returned)
             The predicted variance of each point in the dataset.
         """
+        _checks.are_type(bool, return_variance)
+
         mu_X_pos = self.mu + np.matmul(self.SIG_XM, np.linalg.solve(self.SIG_MM, self.mu_M_pos - self.mu))
-        var_X_pos = np.sum(np.multiply(
-            np.matmul(np.linalg.solve(self.SIG_MM, np.linalg.solve(self.SIG_MM, self.SIG_MM_pos).T), self.SIG_XM.T),
-            self.SIG_XM.T), 0)
-        return mu_X_pos, var_X_pos
+
+        if return_variance:
+            var_X_pos = np.sum(np.multiply(
+                np.matmul(np.linalg.solve(self.SIG_MM, np.linalg.solve(self.SIG_MM, self.SIG_MM_pos).T), self.SIG_XM.T),
+                self.SIG_XM.T), 0)
+            return mu_X_pos, var_X_pos
+
+        elif not return_variance:
+            return mu_X_pos
 
     def sample_posterior(self, n_repeats=1):
         """Conducts a sparse sampling of the dataset by sampling on the calculated inducing points and then uses the

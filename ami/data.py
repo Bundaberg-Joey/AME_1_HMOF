@@ -42,7 +42,7 @@ class DataTriage(object):
             Target values.
         """
         try:
-            X, y = np.array(X).astype(float), np.array(y).astype(float)
+            X, y = np.asarray(X).astype(float), np.asarray(y).astype(float)
         except:
             raise ValueError('Unable to convert target and feature data to float.')
 

@@ -111,7 +111,7 @@ def array_not_empty(*args):
     """
     for a in args:
         try:
-            a = np.array(a)
+            a = np.asarray(a)
             if a.size == 0:
                 raise ValueError('Array is empty')
         except:
@@ -139,7 +139,7 @@ def same_shape(arrays):
     -------
     None
     """
-    shapes = set((np.array(a).shape for a in arrays))
+    shapes = set((np.asarray(a).shape for a in arrays))
     if len(shapes) > 1:
         raise ValueError('Length mismatch, arrays do not have same shape')
 

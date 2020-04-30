@@ -254,7 +254,7 @@ class Prospector(object):
         None :
             Updates numerous attribues concerned with model parameters, covariance matrices and inducing points.
         """
-        untested, train, ytrain = np.array(untested), np.array(train), np.array(ytrain)
+        untested, train, ytrain = np.asarray(untested), np.asarray(train), np.asarray(ytrain)
         _checks.array_not_empty(untested, train, ytrain)
         _checks.nan_present(untested, train, ytrain)
 
@@ -452,8 +452,8 @@ class TrainingFilter(object):
         _checks.array_not_empty(tested_indices, test_results)
         _checks.nan_present(tested_indices, test_results)
 
-        tested_indices = np.array(tested_indices)
-        y_tested = np.array(test_results)
+        tested_indices = np.asarray(tested_indices)
+        y_tested = np.asarray(test_results)
         n_tested = len(y_tested)
 
         if n_tested > self.nmax:

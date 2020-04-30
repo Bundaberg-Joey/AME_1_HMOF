@@ -42,12 +42,12 @@ if __name__ == '__main__':
     # screening --------------------------------------------------------------------------------------------------------
     updates_per_big_fit = 10
 
-    while n_tested < args.max_iterations:
+    for prospector_iteration in range(n_tested, args.max_iterations):
 
         tested, untested = status.tested(), status.untested()
         y_tested = y_exp[tested]
 
-        if n_tested % updates_per_big_fit == 0:
+        if prospector_iteration % updates_per_big_fit == 0:
             print('fitting hyperparameters')
             train, ytrain = train_filter.select_training_points(tested, y_tested)
             model.update_model_parameters(untested, train, ytrain)
@@ -63,6 +63,4 @@ if __name__ == '__main__':
 
         sampled = status.tested()
         top_sampled = rate_eval.top_found_count(sampled)
-        print(F'({n_tested}/{args.max_iterations}) : {top_sampled} of top {len(rate_eval)} sampled')
-
-        n_tested += 1
+        print(F'({prospector_iteration}/{args.max_iterations}) : {top_sampled} of top {len(rate_eval)} sampled')

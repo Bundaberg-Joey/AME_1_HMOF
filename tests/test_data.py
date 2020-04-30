@@ -55,7 +55,10 @@ def test_datatriage_factory_pass(path, loader, x_dim, y_dim):
                              (DataTriagePickle, 'fake/path/rand.pkl'),
                              (DataTriageCSV, 'tests/files/_mock_data_1col.csv'),
                              (DataTriageMatlab, 'tests/files/_mock_data_labels.mat'),
-                             (DataTriagePickle, 'tests/files/_mock_data_labels.pkl')
+                             (DataTriagePickle, 'tests/files/_mock_data_labels.pkl'),
+                             (DataTriageCSV, 1234),
+                             (DataTriageMatlab, 1234),
+                             (DataTriagePickle, 1234),
 
                          ])
 def test_datatriage_factory_fail(loader, path):

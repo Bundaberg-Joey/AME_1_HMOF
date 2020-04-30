@@ -84,7 +84,7 @@ class DataTriage(object):
         cls(X, y) : DataTriage
             Class method creates DataTriage object.
         """
-
+        _checks.are_type(str, data_path)
         X, y = cls._load_dataset_from_path(data_path)
         return cls(X, y)
 

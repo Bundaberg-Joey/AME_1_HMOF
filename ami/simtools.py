@@ -232,7 +232,7 @@ class Evaluator(object):
         _checks.pos_int(n)
         _checks.array_not_empty(y)
         _checks.nan_present(y)
-        _checks.boolean(inverted)
+        _checks.are_type(bool, inverted)
 
         if n > len(y):
             warnings.warn(F'Specified argument `n` {n} is greater than pased array length {len(y)}', Warning)

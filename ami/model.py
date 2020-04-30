@@ -375,7 +375,7 @@ class Prospector(object):
     def lam(self, value):
         """Set value to float. Raise error if incorrect argument type.
         """
-        _checks.any_float(value)
+        _checks.are_type(float, value)
         self._lam = value
 
 

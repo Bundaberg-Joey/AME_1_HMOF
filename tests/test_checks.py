@@ -5,6 +5,29 @@ import numpy as np
 from ami import _checks
 
 
+# _checks.are_type -----------------------------------------------------------------------------------------------------
+def test_aretype_pass():
+    _checks.are_type(int, 1)  # single type,  single args
+    _checks.are_type(float, 1.0)
+    _checks.are_type(str, '1')
+    _checks.are_type(list, [1, 2, 3])
+    _checks.are_type(dict, {1: '1', 2: '2'})
+
+    _checks.are_type(int, 1, 2, 3)  # single type, multiple args
+    _checks.are_type(list, [1, 2, 3], [4, 5, 6])
+
+    _checks.are_type((int, float, list), 1.0)  # multiple types, single arg
+
+    _checks.are_type((str, list), [1, 2, 3], 'hello', 'world')  # multiple types and multiple args
+
+
+@pytest.mark.xfail(reason='Invalid input')
+def test_aretype_fail():
+    _checks.are_type(int, 1.0)  # single type, single arg
+    _checks.are_type(int, '1', 1.0, [1])  # single type, multiple args
+    _checks.are_type((str, int), 3.2, ['Hello', 1])  # multipe types, multiple args
+
+
 # _checks.pos_int ------------------------------------------------------------------------------------------------------
 def test_posint_pass():
     _checks.pos_int(1)
@@ -19,35 +42,6 @@ def test_posint_fail():
     _checks.pos_int('1')
     _checks.pos_int([1])
     _checks.pos_int({1: 1})
-
-
-# _checks.any_float ---------------------------------------------------------------------------------------------------
-def test_anyfloat_pass():
-    _checks.any_float(1.0)
-    _checks.any_float(-1.0, 0.0, 1.0)
-
-
-@pytest.mark.xfail(reason='Invalid inputs')
-def test_anyfloat_fail():
-    _checks.any_float(1)
-    _checks.any_float(1.0, -1)
-    _checks.pos_int('1')
-    _checks.pos_int([1])
-    _checks.pos_int({1: 1})
-
-
-# _checks.any_numeric --------------------------------------------------------------------------------------------------
-def test_anynumeric_pass():
-    _checks.any_numeric(1)
-    _checks.any_numeric(1.0)
-    _checks.any_numeric(-1, 0.0, 1, 2.1, -3.1)
-
-
-@pytest.mark.xfail(reason='Invalid inputs')
-def test_anynumeric_fail():
-    _checks.any_numeric('1')
-    _checks.any_numeric([1], 1)
-    _checks.any_numeric({1: 1}, 1)
 
 
 # _checks.any_numeric --------------------------------------------------------------------------------------------------
@@ -93,15 +87,3 @@ def test_sameshape_fail():
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-def test_boolean_pass():
-    _checks.boolean(True)
-    _checks.boolean(False)
-    _checks.boolean(True, False, True)
-
-
-@pytest.mark.xfail(reason='Invalid, inputs')
-def test_boolean_fail():
-    _checks.boolean(1)
-    _checks.boolean(0)
-    _checks.boolean(1, 0, 1)
-    _checks.boolean(1.0, 0.0)

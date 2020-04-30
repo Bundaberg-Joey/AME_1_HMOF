@@ -132,7 +132,7 @@ def expected_improvement(mu_pred, var_pred, y_max):
     _checks.same_shape((mu_pred, var_pred))
     _checks.array_not_empty(mu_pred, var_pred)
     _checks.nan_present(mu_pred, var_pred)
-    _checks.any_numeric(y_max)
+    _checks.are_type((float, int), y_max)
 
     sig_pred = np.sqrt(var_pred)
     improvement = mu_pred - y_max
@@ -176,7 +176,7 @@ def greedy_tau(mu_pred, var_pred, tau):
     _checks.same_shape((mu_pred, var_pred))
     _checks.array_not_empty(mu_pred, var_pred)
     _checks.nan_present(mu_pred, var_pred)
-    _checks.any_numeric(tau)
+    _checks.are_type((float, int), tau)
 
     sig_pred = np.sqrt(var_pred)
     thresh_scaled = np.divide(tau - mu_pred, sig_pred)

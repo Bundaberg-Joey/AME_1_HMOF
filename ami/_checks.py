@@ -7,6 +7,36 @@ Used for setters, etc.
 import numpy as np
 
 
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def are_type(types, *args):
+    """Checks if passed args belong to specified type(s).
+    Raises ValueError if singular rg not a member of specified types.
+
+    Parameters
+    ----------
+    types : type OR tuple of types if multiple type checks
+        Python types to check passed args against.
+        Can pass either single type or tuple of multiple types.
+
+    args : iterable
+        Objects to be type checked.
+
+    Returns
+    -------
+    None
+    """
+    for a in args:
+        if not isinstance(a, types):
+            raise TypeError(F'Passed arg must be member of {types} but {type(a)} was passed.')
+
+# TODO : add string check to datatriage
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
 def pos_int(*args):
     """checks if valus is positive integer and returns if true.
     Otherwise raises relevant error.
@@ -25,50 +55,6 @@ def pos_int(*args):
             raise TypeError('Value must be an integer')
         if a <= 0:
             raise ValueError('Value must be positive')
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def any_float(*args):
-    """checks if valus is float and returns if true.
-    Otherwise raises relevant error.
-
-    Parameters
-    ----------
-    args : iterable
-        Float or other user input.
-
-    Returns
-    -------
-    None
-    """
-    for a in args:
-        if not isinstance(a, float):
-            raise TypeError('Value must be a float')
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def any_numeric(*args):
-    """checks if valus is float or int.
-    Otherwise raises relevant error.
-
-    Parameters
-    ----------
-    args : iterable
-         Numeric or other user input.
-
-    Returns
-    -------
-    None
-    """
-    for a in args:
-        if isinstance(a, float) or isinstance(a, int):
-            pass
-        else:
-            raise TypeError('Value must be a float')
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -182,20 +168,3 @@ def same_type(comparison_type, *args):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-
-
-def boolean(*args):
-    """Checks if values are bool True or False and raises error if not.
-
-    Parameters
-    ----------
-    args : iterable
-        Bool or other user inputs.
-
-    Returns
-    -------
-    None
-    """
-    for a in args:
-        if not isinstance(a, bool):
-            raise ValueError(F'Passed arg must be type {bool} but type {type(a)} was passed.')

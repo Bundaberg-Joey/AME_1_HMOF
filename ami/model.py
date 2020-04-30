@@ -382,7 +382,7 @@ class Prospector(object):
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-class FrugalTrainer(object):
+class TrainingFilter(object):
     """Determines ideal training points to consider to facilitate sparse fitting of the Prospector.
 
     Attributes

@@ -5,7 +5,7 @@ import argparse
 import numpy as np
 
 from ami import alpha, simtools
-from ami.model import Prospector, FrugalTrainer
+from ami.model import Prospector, TrainingFilter
 from ami.data import DataTriageCSV
 
 
@@ -37,8 +37,9 @@ if __name__ == '__main__':
         status.update(sample, 2)
 
     model = Prospector(X=X)
-    ft = FrugalTrainer(nmax=80, ntop=20, nrecent=20)
-    # screning ---------------------------------------------------------------------------------------------------------
+    train_filter = TrainingFilter(nmax=80, ntop=20, nrecent=20)
+
+    # screening --------------------------------------------------------------------------------------------------------
     updates_per_big_fit = 10
 
     while n_tested < args.max_iterations:
@@ -48,7 +49,7 @@ if __name__ == '__main__':
 
         if n_tested % updates_per_big_fit == 0:
             print('fitting hyperparameters')
-            train, ytrain = ft.select_training_points(tested, y_tested)
+            train, ytrain = train_filter.select_training_points(tested, y_tested)
             model.update_model_parameters(untested, train, ytrain)
 
         model.fit_posterior(y_tested, tested)

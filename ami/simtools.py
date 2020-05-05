@@ -345,8 +345,7 @@ class TrainingFilter(object):
     """
 
     def __init__(self, nmax=400, ntop=100, nrecent=100):
-        """Confirms input variables and raises error if incorrect type or sign.
-
+        """
         Parameters
         ----------
         nmax : int
@@ -358,8 +357,6 @@ class TrainingFilter(object):
         nrecent : int
             The `n` most recently sampled data points to include in training data.
         """
-        _checks.pos_int(nmax, ntop, nrecent)
-
         self.nmax = nmax
         self.ntop = ntop
         self.nrecent = nrecent
@@ -406,3 +403,36 @@ class TrainingFilter(object):
             train_indices, y_train = tested_indices, test_results
 
         return train_indices, y_train
+
+    @property
+    def nmax(self):
+        return self._nmax
+
+    @nmax.setter
+    def nmax(self, value):
+        """Set value to positive integer. Raise error if incorrect argument type.
+        """
+        _checks.pos_int(value)
+        self._nmax = value
+
+    @property
+    def ntop(self):
+        return self._ntop
+
+    @ntop.setter
+    def ntop(self, value):
+        """Set value to positive integer. Raise error if incorrect argument type.
+        """
+        _checks.pos_int(value)
+        self._ntop = value
+
+    @property
+    def nrecent(self):
+        return self._nrecent
+
+    @nrecent.setter
+    def nrecent(self, value):
+        """Set value to positive integer. Raise error if incorrect argument type.
+        """
+        _checks.pos_int(value)
+        self._nrecent = value

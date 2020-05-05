@@ -332,7 +332,7 @@ class TrainingFilter(object):
 
     Methods
     -------
-    select_training_points(self, tested_indices, test_results) --> determines training data.
+    select_training_points(self, tested_indices, observations) --> determines training data.
 
     Notes
     -----
@@ -361,7 +361,7 @@ class TrainingFilter(object):
         self.ntop = ntop
         self.nrecent = nrecent
 
-    def select_training_points(self, tested_indices, test_results):
+    def select_training_points(self, tested_indices, observations):
         """Selects training points to use, given imposed constraints on initialisation.
         If the number of tested points is less than the user maximum, then just returns passed arrays to user.
 
@@ -370,7 +370,7 @@ class TrainingFilter(object):
         tested_indices : list / array, shape(num_tested_points, )
             Indices of data points in the feature matrix which have been tested.
 
-        test_results : list / array, shape(num_tested_points, )
+        observations : list / array, shape(num_tested_points, )
             Target values of data points which have been tested.
 
         Returns
@@ -379,17 +379,17 @@ class TrainingFilter(object):
             Indices of data points to use and their emperical target values.
             The size of the arrays are dependant on the conditional size.
         """
-        _checks.array_not_empty(tested_indices, test_results)
-        _checks.nan_present(tested_indices, test_results)
+        _checks.array_not_empty(tested_indices, observations)
+        _checks.nan_present(tested_indices, observations)
 
         tested_indices = np.asarray(tested_indices)
-        y_tested = np.asarray(test_results)
-        n_tested = len(y_tested)
+        observations = np.asarray(observations)
+        n_tested = len(observations)
 
         if n_tested > self.nmax:
             indices = np.arange(0, n_tested, 1)
 
-            top_ind = np.argsort(y_tested)[-self.ntop:]
+            top_ind = np.argsort(observations)[-self.ntop:]
             recent_ind = indices[n_tested - self.nrecent:]
             top_recent_ind = np.unique(np.concatenate((top_ind, recent_ind)), axis=0)
 
@@ -397,10 +397,10 @@ class TrainingFilter(object):
             rand = np.random.choice(not_toprecent, self.nmax - len(top_recent_ind), replace=False)
 
             testedtrain = np.concatenate((top_recent_ind, rand))
-            train_indices, y_train = tested_indices[testedtrain], y_tested[testedtrain]
+            train_indices, y_train = tested_indices[testedtrain], observations[testedtrain]
 
         else:
-            train_indices, y_train = tested_indices, test_results
+            train_indices, y_train = tested_indices, observations
 
         return train_indices, y_train
 

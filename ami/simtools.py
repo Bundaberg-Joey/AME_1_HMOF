@@ -390,7 +390,7 @@ class TrainingFilter(object):
             indices = np.arange(0, n_tested, 1)
 
             top_ind = np.argsort(observations)[-self.ntop:]
-            recent_ind = indices[n_tested - self.nrecent:]
+            recent_ind = indices[-self.nrecent:]
             top_recent_ind = np.unique(np.concatenate((top_ind, recent_ind)), axis=0)
 
             not_toprecent = indices[np.isin(indices, top_recent_ind, invert=True)]

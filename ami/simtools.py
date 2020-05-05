@@ -379,6 +379,7 @@ class TrainingFilter(object):
             Indices of data points to use and their emperical target values.
             The size of the arrays are dependant on the conditional size.
         """
+        _checks.same_shape((tested_indices, observations))
         _checks.array_not_empty(tested_indices, observations)
         _checks.nan_present(tested_indices, observations)
 

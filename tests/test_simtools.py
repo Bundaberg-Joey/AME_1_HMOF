@@ -2,7 +2,7 @@
 import pytest
 import numpy as np
 
-from ami.simtools import Status, Evaluator
+from ami.simtools import Status, Evaluator, TrainingFilter
 
 
 # simtools.Status ------------------------------------------------------------------------------------------------------
@@ -109,5 +109,59 @@ def test_evaluator_duplicate_fail():
     found = [1, 1, 2]
     assert np.array_equal(ev.top_found_count(found), [1, 1])
 
+
+# simtools.TrainingFilter --------------------------------------------------------------------------------------------
+@pytest.mark.parametrize("nmax, ntop, nrecent", [(300, 75, 75)])
+def test_trainingfilter_pass(nmax, ntop, nrecent):
+
+    tr_fil = TrainingFilter()  # can instantiate
+
+    tr_fil.nmax = nmax
+    tr_fil.ntop = ntop
+    tr_fil.nrecent = nrecent
+
+    assert (tr_fil.nmax != 400) and (tr_fil.ntop != 100) and (tr_fil.nrecent != 100)  # can update
+
+    indices = np.arange(0, nmax*2, 1)  # potential vlaues greater than size of nmax
+
+    small_size = np.random.randint(nmax - 1)
+    small_indices = np.random.choice(indices, size=small_size)  # random number of indices
+    small_observations = np.random.normal(130, 10, size=small_size)  # random observation values
+    train_ind_small, y_train_small = tr_fil.select_training_points(small_indices, small_observations)
+
+    assert isinstance(train_ind_small, np.ndarray) and isinstance(y_train_small, np.ndarray)
+    assert train_ind_small.shape == y_train_small.shape  # output shapes identical
+    assert len(train_ind_small) < nmax  # output still smaller than nmax
+    assert np.array_equal(small_indices, train_ind_small)  # assert indices are identical if small
+    assert np.array_equal(small_observations, y_train_small)  # assert observations are identical if small
+
+    big_size = np.random.randint(nmax, nmax*2)
+    big_indices = np.random.choice(indices, size=big_size)
+    big_observations = np.random.normal(130, 10, size=big_size)
+    train_ind_big, y_train_big = tr_fil.select_training_points(big_indices, big_observations)
+
+    assert isinstance(train_ind_big, np.ndarray) and isinstance(y_train_big, np.ndarray)
+    assert train_ind_big.shape == y_train_big.shape  # output shapes identical
+    assert len(train_ind_big) == nmax  # output length equal to nmax if to many go in
+    assert np.isin(train_ind_big, big_indices).all() == True  # ensure only get subset of inputs out
+    assert np.isin(y_train_big, big_observations).all() == True
+
+
+@pytest.mark.xfail(reason='Bad arguments passed')
+@pytest.mark.parametrize("nmax, ntop, nrecent, tested_ind, obs",
+                         [
+                             (100, 50, 50.0, [1, 2, 3], [4, 5, 6]),  # float attribute
+                             (100, 0, 50, [1, 2, 3], [4, 5, 6]),  # non positive int
+                             ('100', 50, 50, [1, 2, 3], [4, 5, 6]),  # non numeric input
+                             (100, 50, 50, 'abcd', 'efgh'),  # ordered non array / list input
+                             (100, 50, 50, [], []),  # empty arrays / lists
+                             (100, 50, 50, np.array([1, np.nan]), np.random.randn(2)),
+                             (100, 50, 50, np.random.randn(2), np.array([1, np.nan])),
+                             (100, 50, 50, np.random.randn(3), np.random.randn(20)),
+
+                         ])
+def test_trainingfilter_fail(nmax, ntop, nrecent, tested_ind, obs):
+    tr_fil = TrainingFilter(nmax, ntop, nrecent)
+    train_ind, train_obs = tr_fil.select_training_points(tested_ind, obs)
 
 # ----------------------------------------------------------------------------------------------------------------------

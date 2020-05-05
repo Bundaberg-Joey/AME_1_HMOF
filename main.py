@@ -5,7 +5,7 @@ import argparse
 import numpy as np
 
 from ami import alpha, simtools
-from ami.model import Prospector, TrainingFilter
+from ami.model import Prospector
 from ami.data import DataTriageCSV
 
 
@@ -37,7 +37,7 @@ if __name__ == '__main__':
         status.update(sample, 2)
 
     model = Prospector(X=X)
-    train_filter = TrainingFilter(nmax=80, ntop=20, nrecent=20)
+    train_filter = simtools.TrainingFilter(nmax=80, ntop=20, nrecent=20)
 
     # screening --------------------------------------------------------------------------------------------------------
     updates_per_big_fit = 10

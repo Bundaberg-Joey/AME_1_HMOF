@@ -205,7 +205,6 @@ def select_max_alpha(untested, alpha):
         Integer index of the data point to be selected from the original data set.
     """
     _checks.array_not_empty(untested, alpha)
-    _checks.nan_present(untested, alpha)
 
     max_untested_alpha = np.argmax(alpha[untested])
     pick = untested[max_untested_alpha]

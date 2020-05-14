@@ -167,8 +167,7 @@ def test_selectmaxalpha_pass(untested, al, expected):
 @pytest.mark.xfail(reason="Invalid inputs")
 @pytest.mark.parametrize("untested, al",
                          [
-                             ([], np.arange(0, 12, 1)),  # empty array
-                             ([0, np.nan, 2, 11], np.arange(11, -1, -1)),  # nan present
+                             ([], np.arange(0, 12, 1))  # empty array
                          ])
 def test_selectmaxalpha_pass(untested, al):
     """Internal logic should handle most checks.
